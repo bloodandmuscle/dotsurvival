@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dot Survivor</title>
-  <script type="text/javascript" src="/ruxitagentjs_ICANVfqru_10335260306043831.js" data-dtconfig="rid=RID_284289620|rpid=429017643|domain=yaanimail.com|reportUrl=/rb_3f2c3bac-8f12-4c72-8ade-c9ccfa775b54|app=96376d6e64ad80dd|cuc=0opryidt|owasp=1|mel=100000|featureHash=ICANVfqru|dpvc=1|lastModification=1778154551522|tp=500,50,0|rdnt=1|uxrgce=1|srbbv=2|agentUri=/ruxitagentjs_ICANVfqru_10335260306043831.js"></script><style>
+  <title>Dot Survivor (Final Stable)</title>
+  <style>
     html, body { height:100%; margin:0; background:#070b12; color:#e7eefc; font-family:system-ui, Arial; }
     .wrap { height:100%; display:grid; place-items:center; padding:10px; box-sizing:border-box; }
     canvas { background:#0b1224; border:1px solid #22304f; border-radius:12px; width:98vw; max-width:98vw; height:auto; display:block; cursor:crosshair; }
 
     .hud { position:fixed; left:16px; top:12px; display:grid; gap:10px; font-size:14px; user-select:none; z-index:20; }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
     .bar { width:420px; height:10px; border-radius:999px; background:#1f2a44; overflow:hidden; border:1px solid #2b3b63; }
     .bar > div { height:100%; width:0%; }
     #hpBar { background:linear-gradient(90deg,#34d399,#22c55e); }
@@ -25,12 +24,12 @@
     .btn { background:#101b36; border:1px solid #2b3b63; color:#e7eefc; padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:900; min-width:140px; text-align:center; }
     .btn:hover { border-color:#4c68b0; }
 
-    .overlay { position:fixed; inset:0; display:none; background:rgba(0,0,0,0.62); align-items:center; justify-content:center; padding:18px; z-index:30; }
+    .overlay { position:fixed; inset:0; display:none; background:rgba(0,0,0,0.62); align-items:center; justify-content:center; padding:18px; z-index:30; overflow-y:auto; }
     .panel { width:min(1150px,96vw); background:#0b1224; border:1px solid #26365d; border-radius:18px; padding:22px; box-shadow:0 10px 50px rgba(0,0,0,0.55); text-align:center; }
     .panel h2 { margin:0 0 10px; font-size:34px; }
     .panel p  { margin:0 0 16px; opacity:0.9; font-size:18px; }
 
-    .opts { display:grid; gap:14px; grid-template-columns:repeat(4,1fr); text-align:left; }
+    .opts { display:grid; gap:14px; grid-template-columns:repeat(2,1fr); text-align:left; }
     button.opt { background:#101b36; border:1px solid #2b3b63; color:#e7eefc; padding:16px; border-radius:14px; text-align:left; cursor:pointer; min-height:120px; }
     button.opt:hover { border-color:#4c68b0; }
     .k { font-weight:950; display:block; margin-bottom:10px; font-size:16px; }
@@ -47,13 +46,27 @@
     .gameOverText {
       position: fixed; left:50%; top:50%; transform:translate(-50%,-50%);
       font-size: 84px; font-weight: 1000; letter-spacing: 2px;
-      color: rgba(255,255,255,0.92); text-shadow: 0 8px 40px rgba(0,0,0,0.7);
+      color: rgba(255,255,255,0.92); text-shadow:0 8px 40px rgba(0,0,0,0.7);
       display:none; z-index:25; user-select:none; pointer-events:none;
     }
 
+    .marketGrid { display:grid; gap:12px; grid-template-columns:repeat(3,1fr); margin-top:16px; }
+    .marketItem { background:#1a2a55; border:1px solid #35508f; padding:14px; border-radius:12px; text-align:center; cursor:pointer; transition:all 0.2s; }
+    .marketItem:hover { border-color:#6d8fe6; transform:translateY(-2px); }
+    .marketItem.disabled { opacity:0.5; cursor:not-allowed; }
+    .marketItem .itemName { font-weight:900; font-size:16px; margin-bottom:8px; }
+    .marketItem .itemDesc { font-size:12px; opacity:0.8; margin-bottom:8px; }
+    .marketItem .itemPrice { font-weight:900; color:#ffd700; font-size:14px; }
+    .marketItem .itemOwned { font-size:11px; opacity:0.7; margin-top:4px; }
+
+    .confirmRow { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+    .confirmBtn { min-width:260px; }
+
     @media (max-width: 900px){
       .opts { grid-template-columns:repeat(1,1fr); }
+      .marketGrid { grid-template-columns:repeat(1,1fr); }
       .bigBtn { min-width: min(520px, 92vw); }
+      .confirmBtn { min-width: min(260px, 92vw); }
       .bar { width: 300px; }
     }
   </style>
@@ -74,25 +87,31 @@
       <div class="bar"><div id="xpBar"></div></div>
       <div><span id="xpText">0/2</span></div>
     </div>
+    <div class="row">
+      <div style="min-width:60px;">ALTIN</div>
+      <div style="color:#ffd700; font-weight:900;"><span id="goldText">0</span></div>
+    </div>
     <div class="small" id="statText"></div>
     <div class="small" id="buildText"></div>
   </div>
 
   <div class="topRight">
     <div class="btnRow">
+      <button class="btn" id="marketBtn">Market</button>
       <button class="btn" id="pauseBtn">Duraklat</button>
       <button class="btn" id="restartBtn">Yeniden</button>
     </div>
     <div class="small">
       Duraklat/Devam: <code>P</code> / <code>Space</code> | Dash: <code>Shift</code><br/>
-      Hareket: <code>WASD</code>/<code>Oklar</code> | Yükseltme: <code>1-4</code> | Nişan: <code>Mouse</code>
+      Hareket: <code>WASD</code>/<code>Oklar</code> | Yükseltme: <code>1-4</code> | Nişan: <code>Mouse</code><br/>
+      Market: <code>M</code> | Yeniden: <code>R</code> (onay ister)
     </div>
   </div>
 
   <div class="overlay" id="startOverlay">
     <div class="panel">
-      <h2 id="startTitle">Dot Survivor</h2>
-      <p id="startSubtitle">Başlamak için butona bas.</p>
+      <h2>Dot Survivor</h2>
+      <p>Başlamak için butona bas.</p>
       <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:14px;">
         <button class="bigBtn" id="startBtn">Yeni Oyuna Başla</button>
       </div>
@@ -106,11 +125,36 @@
   <div class="overlay" id="upgradeOverlay">
     <div class="panel">
       <h2>Yükseltme seç</h2>
-      <p>1–4 ile seç. Auto-pick olursa oyun duraklar.</p>
+      <p>1–4 ile seç. Auto-pick oyunu durdurmaz.</p>
       <div class="opts" id="opts"></div>
       <div class="note">
         <span>Otomatik seçim: <b id="autoPickText">10</b> sn</span>
-        <span><button class="btn" id="rerollBtn" style="min-width:auto; padding:8px 10px; display:none;">Yenile (Ücretsiz)</button></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="marketOverlay">
+    <div class="panel">
+      <h2>Market</h2>
+      <p>Yükseltmeler (run içi). Altın: <span style="color:#ffd700; font-weight:900;" id="marketGoldText">0</span></p>
+      <div class="marketGrid" id="marketGrid"></div>
+      <div style="margin-top:20px;">
+        <button class="bigBtn" id="closeMarketBtn" style="min-width:300px;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="restartOverlay">
+    <div class="panel" style="max-width:760px;">
+      <h2>Yeni Oyun?</h2>
+      <p>Yanlışlıkla basmayı engellemek için onay gerekir.</p>
+      <div class="confirmRow">
+        <button class="bigBtn confirmBtn" id="restartYesBtn">Evet (E)</button>
+        <button class="bigBtn confirmBtn" id="restartNoBtn">Hayır (H)</button>
+      </div>
+      <div class="note">
+        <span>Kısayol: <b>E</b> = Evet, <b>H</b> = Hayır</span>
+        <span>Esc = Hayır</span>
       </div>
     </div>
   </div>
@@ -119,71 +163,57 @@
 (() => {
   "use strict";
 
-  // ===== VALIDATION & ERROR HANDLING =====
-  function validateNumber(val, min, max, defaultVal) {
-    const n = Number(val);
-    if (isNaN(n)) return defaultVal;
-    return Math.max(min, Math.min(max, n));
-  }
-
-  function validateElement(id) {
-    const el = document.getElementById(id);
-    if (!el) {
-      console.warn(`Element not found: ${id}`);
-      return null;
-    }
-    return el;
-  }
-
-  function safeCall(fn, fallback = null) {
-    try {
-      return fn();
-    } catch (err) {
-      console.error("Safe call error:", err);
-      return fallback;
-    }
-  }
-
-  // DOM
-  const canvas = validateElement('c');
-  if (!canvas) throw new Error("Canvas element not found");
-  
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error("2D context failed");
-
-  const hpText = validateElement('hpText');
-  const hpMaxText = validateElement('hpMaxText');
-  const hpBar = validateElement('hpBar');
-  const xpText = validateElement('xpText');
-  const xpBar = validateElement('xpBar');
-  const statText = validateElement('statText');
-  const buildText = validateElement('buildText');
-
-  const pauseBtn = validateElement('pauseBtn');
-  const restartBtn = validateElement('restartBtn');
-
-  const startOverlay = validateElement('startOverlay');
-  const startBtn = validateElement('startBtn');
-
-  const upgradeOverlay = validateElement('upgradeOverlay');
-  const optsEl = validateElement('opts');
-  const autoPickText = validateElement('autoPickText');
-  const rerollBtn = validateElement('rerollBtn');
-
-  const gameOverText = validateElement('gameOverText');
-
-  // Helpers
-  const W = canvas.width, H = canvas.height;
+  // ========= helpers =========
   const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   const lerp = (a,b,t)=>a+(b-a)*t;
   const dist2 = (ax,ay,bx,by)=>{ const dx=ax-bx, dy=ay-by; return dx*dx + dy*dy; };
 
-  // Config
+  function validateNumber(val, min, max, defaultVal) {
+    const n = Number(val);
+    if (Number.isNaN(n)) return defaultVal;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function segCircleHit(ax,ay,bx,by,cx,cy,r){
+    const abx = bx-ax, aby = by-ay;
+    const acx = cx-ax, acy = cy-ay;
+    const ab2 = abx*abx + aby*aby;
+    let t = ab2===0 ? 0 : (acx*abx + acy*aby)/ab2;
+    t = clamp(t,0,1);
+    const hx = ax + abx*t;
+    const hy = ay + aby*t;
+    return dist2(hx,hy,cx,cy) <= r*r;
+  }
+
+  const el = id => document.getElementById(id);
+
+  // ========= DOM =========
+  const canvas = el("c");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  const hpText = el("hpText"), hpMaxText = el("hpMaxText"), hpBar = el("hpBar");
+  const xpText = el("xpText"), xpBar = el("xpBar");
+  const goldText = el("goldText");
+  const statText = el("statText"), buildText = el("buildText");
+
+  const pauseBtn = el("pauseBtn"), restartBtn = el("restartBtn"), marketBtn = el("marketBtn");
+  const startOverlay = el("startOverlay"), startBtn = el("startBtn");
+  const upgradeOverlay = el("upgradeOverlay"), optsEl = el("opts"), autoPickText = el("autoPickText");
+  const marketOverlay = el("marketOverlay"), marketGrid = el("marketGrid"), marketGoldText = el("marketGoldText"), closeMarketBtn = el("closeMarketBtn");
+  const restartOverlay = el("restartOverlay"), restartYesBtn = el("restartYesBtn"), restartNoBtn = el("restartNoBtn");
+  const gameOverText = el("gameOverText");
+
+  // ========= CONFIG =========
   const SKILL_CAP = 100;
-  const HIT_DAMAGE = 1;
+  const MAX_SHOTS_PER_SKILL = 20;
+  const STICK_MAX_COUNT = 8;
 
   const BASE_MONSTER_HP = 2;
   const MAX_ENEMY_HP = 300;
+  const MAX_ENEMIES = 300;
+  const SPAWN_LIMIT_PER_WAVE = 100;
+  const ENEMY_DENSITY_MULT = 0.85;
 
   const ENEMY_BASE_SPEED = 180 * 0.45 * 0.90;
   const PLAYER_SPEED = 180 * 1.5;
@@ -193,7 +223,6 @@
   const PLAYER_SCALE_MAX = 3.0;
 
   const HP_BONUS_PER_LEVEL = 10;
-  const ENEMY_DENSITY_MULT = 0.85;
 
   const RING_BASE = 140 * 1.60;
   const RING_SKILL_ADD = 18;
@@ -204,16 +233,18 @@
   const STICK_MAX_MULT = 2.0;
   const STICK_BASE_WIDTH = 6;
 
-  const WAVE_MAX_INTERVAL = 3.0 * 1.15; // %15 arttırıldı
-  const WAVE_MIN_INTERVAL = 1.2 * 1.15; // %15 arttırıldı
+  const WAVE_MAX_INTERVAL = 3.0 * 1.15;
+  const WAVE_MIN_INTERVAL = 1.2 * 1.15;
 
   const DROP_R = 18;
   const HEALTH_DROP_R = DROP_R * 0.50;
   const EXP_DROP_R = DROP_R * 0.50;
   const UPGRADE_DROP_R = DROP_R * 0.50;
+  const GOLD_DROP_R = DROP_R * 0.50;
 
   const MAGNET_RANGE_MULT = 50;
   const MAGNET_STRENGTH = 1800 * 2;
+
   const CARD_LOCK_DUR = 10.0;
 
   const BOSS_SIZE_MULT = 3.0;
@@ -226,29 +257,28 @@
   const BOSS_RETREAT_DIST = 0.5 * Math.min(W, H) * 3.0;
 
   const BOSS_FREEZE_DUR = 0.50;
-  const BOSS_FREEZE_LOCKOUT = 0.15;
+  const BOSS_FREEZE_LOCKOUT = 0.50;
 
   const WAVE_BANNER_DUR = 0.7;
   const RESUME_MSG_DUR = 0.7;
-
-  const DEATH_HOLE_COVER_DUR = 3.0;
-  const DEATH_HOLE_EXTRA_DUR = 1.6;
 
   const DASH_DUR = 0.14;
   const DASH_CD = 1.0;
   const DASH_MULT = 3.1;
 
-  const MAX_PARTICLES = 650;
-  const MAX_EFFECTS = 240;
-  const MAX_TRAILS = 420;
   const FX_MULT = 0.75;
 
   const BULLET_LIFE = 6.0;
   const BULLET_OOB = 800;
   const BULLET_SAME_HIT_CD = 0.05;
-  const ELECTRIC_FIELD_TICK = 1.0;
 
+  const ELECTRIC_FIELD_TICK = 1.0;
   const SPAWN_PADDING = 140;
+
+  const COMBO_TIMEOUT = 4.0;
+
+  // Boss sayısı çok büyüyünce tarayıcı “donuyor” gibi olur. O yüzden üst sınır.
+  const MAX_BOSSES_PER_WAVE = 12;
 
   // Colors
   const COL_PLAYER = "rgba(59,130,246,0.95)";
@@ -266,7 +296,7 @@
   ];
   let currentBG = BG_CYCLE[0];
 
-  // Prime XP
+  // ========= Prime XP =========
   function isPrime(n){
     if(n<2) return false;
     if(n%2===0) return n===2;
@@ -284,87 +314,81 @@
   }
   const expNeed = lvl => nthPrime(lvl);
 
-  // ===== OBJECT POOLING =====
+  // ========= Pool =========
   class ObjectPool {
-    constructor(factory, resetFn, initialSize = 100) {
+    constructor(factory, resetFn, initialSize=100){
       this.factory = factory;
       this.resetFn = resetFn;
       this.available = [];
       this.active = [];
-      for (let i = 0; i < initialSize; i++) {
-        this.available.push(factory());
-      }
+      for(let i=0;i<initialSize;i++) this.available.push(factory());
     }
-
-    get() {
-      let obj;
-      if (this.available.length > 0) {
-        obj = this.available.pop();
-      } else {
-        obj = this.factory();
-      }
+    get(){
+      const obj = this.available.length ? this.available.pop() : this.factory();
       this.active.push(obj);
       return obj;
     }
-
-    release(obj) {
-      if (!obj) return;
+    release(obj){
+      if(!obj) return;
       const idx = this.active.indexOf(obj);
-      if (idx !== -1) {
-        this.active.splice(idx, 1);
+      if(idx!==-1){
+        this.active.splice(idx,1);
         this.resetFn(obj);
         this.available.push(obj);
       }
     }
-
-    releaseAll() {
-      while (this.active.length > 0) {
+    releaseAll(){
+      while(this.active.length){
         const obj = this.active.pop();
-        if (obj) {
-          this.resetFn(obj);
-          this.available.push(obj);
-        }
+        this.resetFn(obj);
+        this.available.push(obj);
       }
     }
-
-    getActive() {
-      return this.active;
-    }
-
-    clear() {
-      this.available = [];
-      this.active = [];
-    }
+    getActive(){ return this.active.slice(); }
   }
 
-  // Enemy pool
   const enemyPool = new ObjectPool(
-    () => ({ uid: 0, kind: "", x: 0, y: 0, r: 0, sp: 0, dmg: 0, hp: 0, hpMax: 0, kvx: 0, kvy: 0, spawnImmuneT: 0, bossType: "", donut: false, state: "", cd: 0, retreatT: 0, tx: 0, ty: 0, freezeT: 0, freezeLock: 0 }),
-    (obj) => {
-      obj.uid = 0; obj.kind = ""; obj.x = 0; obj.y = 0; obj.r = 0; obj.sp = 0; obj.dmg = 0; obj.hp = 0; obj.hpMax = 0;
-      obj.kvx = 0; obj.kvy = 0; obj.spawnImmuneT = 0; obj.bossType = ""; obj.donut = false; obj.state = "";
-      obj.cd = 0; obj.retreatT = 0; obj.tx = 0; obj.ty = 0; obj.freezeT = 0; obj.freezeLock = 0;
-    },
-    150
+    () => ({ uid:0, kind:"", shape:0, x:0,y:0,r:0, sp:0, dmg:0, hp:0, hpMax:0, kvx:0,kvy:0, spawnImmuneT:0, bossType:"", donut:false, state:"", cd:0, retreatT:0, tx:0, ty:0, freezeT:0, freezeLock:0 }),
+    (e)=>{ e.uid=0; e.kind=""; e.shape=0; e.x=e.y=e.r=e.sp=e.dmg=e.hp=e.hpMax=0; e.kvx=e.kvy=0; e.spawnImmuneT=0; e.bossType=""; e.donut=false; e.state=""; e.cd=0; e.retreatT=0; e.tx=0; e.ty=0; e.freezeT=0; e.freezeLock=0; },
+    170
   );
 
-  // Bullet pool
   const bulletPool = new ObjectPool(
-    () => ({ kind: "", x: 0, y: 0, vx: 0, vy: 0, r: 0, life: 0, color: "", pierce: 0, dmg: 0, lastHitUid: 0, lastHitT: 0, ricochetN: 0, ricochetUsed: false }),
-    (obj) => {
-      obj.kind = ""; obj.x = 0; obj.y = 0; obj.vx = 0; obj.vy = 0; obj.r = 0; obj.life = 0; obj.color = "";
-      obj.pierce = 0; obj.dmg = 0; obj.lastHitUid = 0; obj.lastHitT = 0; obj.ricochetN = 0; obj.ricochetUsed = false;
-    },
-    200
+    () => ({ kind:"", x:0,y:0, vx:0,vy:0, r:0, life:0, color:"", pierce:0, dmg:0, lastHitUid:0, lastHitT:0, ricochetN:0, ricochetUsed:false }),
+    (b)=>{ b.kind=""; b.x=b.y=b.vx=b.vy=b.r=b.life=0; b.color=""; b.pierce=0; b.dmg=0; b.lastHitUid=0; b.lastHitT=0; b.ricochetN=0; b.ricochetUsed=false; },
+    260
   );
 
-  // State
-  let running=false, started=false, pausedByUpgrade=false;
+  const dropPool = new ObjectPool(
+    () => ({ x:0,y:0,r:0,type:"",life:0,vx:0,vy:0,amount:0 }),
+    (d)=>{ d.x=d.y=d.r=0; d.type=""; d.life=0; d.vx=d.vy=0; d.amount=0; },
+    380
+  );
 
-  let gameOver=false;
-  let playerDead=false;
-  let deathWavesRemaining=0;
-  let deathHoleT=0;
+  const particlePool = new ObjectPool(
+    () => ({ x:0,y:0,vx:0,vy:0,life:0,max:0,rr:0,color:"" }),
+    (p)=>{ p.x=p.y=p.vx=p.vy=p.life=p.max=p.rr=0; p.color=""; },
+    340
+  );
+
+  const trailPool = new ObjectPool(
+    () => ({ x:0,y:0,color:"",r:0,life:0,max:0 }),
+    (t)=>{ t.x=t.y=t.r=t.life=t.max=0; t.color=""; },
+    340
+  );
+
+  const effectPool = new ObjectPool(
+    () => ({ kind:"", x:0,y:0,r:0, life:0,max:0, color:"", ax:0,ay:0,bx:0,by:0,w:0 }),
+    (e)=>{ e.kind=""; e.x=e.y=e.r=e.life=e.max=0; e.color=""; e.ax=e.ay=e.bx=e.by=e.w=0; },
+    160
+  );
+
+  // ========= State =========
+  let started=false, running=false, pausedByUpgrade=false;
+  let restartConfirmOpen=false, runningBeforeRestartConfirm=false;
+
+  let gameOver=false, playerDead=false;
+  let deathHoleT=0, deathWavesRemaining=0;
 
   let kills=0;
   let exp=0, expLevel=1, points=0;
@@ -373,7 +397,7 @@
   let waveBannerT=0, waveBannerText="";
   let resumeMsgT=0;
 
-  let upgradeOptions=[], autoPick=0, upgradeScreen=0, rerollUsed=false;
+  let upgradeOptions=[], autoPick=0, upgradeScreen=0;
   let cardLockT=0;
 
   let timeAlive=0;
@@ -384,64 +408,95 @@
   let lastMoveX=0, lastMoveY=0;
   let dashDirX=0, dashDirY=0;
 
-  let mouseX = W*0.5, mouseY = H*0.5;
-  let mousePressed = false;
+  let mouseX=W*0.5, mouseY=H*0.5, mousePressed=false;
+  const keys = new Set();
 
-  const keys=new Set();
+  const player = { x:W*0.5, y:H*0.5, r:PLAYER_BASE_R, hp:100, hpMax:100 };
 
-  const player={ x:W*0.5, y:H*0.5, r:PLAYER_BASE_R, hp:100, hpMax:100 };
+  const skills = { baseWeapon:0, fireball:0, electricBall:0, fireRing:0, electricRing:0, stick:0, explode:0 };
 
-  const skills={
-    baseWeapon:0, fireball:0, electricBall:0,
-    fireRing:0, electricRing:0,
-    stick:0, explode:0
+  // Market run içi
+  const permanentUpgrades = {
+    ammoBonus:   { count:0, baseCost:1000, name:"+1 İlave Mermi", desc:"Ateş + Elektrik atışına +1 mermi (run içi)" },
+    stickExtra:  { count:0, baseCost:1000, name:"Ekstra Çubuk", desc:"+1 ekstra dönen çubuk (run içi)" },
+    damageBonus: { count:0, baseCost:1000, name:"Hasar +50%", desc:"+50% tüm hasar (run içi)" }
   };
 
-  let tBase=0, tFire=0, tElec=0, stickAngle=0, ringTickAcc=0;
-  let uidGen=1;
+  // locks: sadece karşılıklı mermi/halkalar
+  const runLocks = { bullet:null, ring:null };
+  const BONUS_IDS = ["bonus_ammo","bonus_stick","bonus_damage"];
+  const BONUS_DESC = {
+    bonus_ammo: "Ateş + Elektrik atışına +1 mermi ekler (market ile aynı).",
+    bonus_stick:"Dönen çubuk sayısına +1 ekler (market ile aynı).",
+    bonus_damage:"Tüm hasarı %50 artırır (market ile aynı)."
+  };
 
-  // Arrays for non-pooled objects
-  let drops=[], particles=[], trails=[], effects=[], fields=[];
+  let gold = 0;
+  let uidGen = 1;
 
-  // Visual helpers
-  function pushLimited(arr, item, max){
-    if (!arr || !item) return;
-    arr.push(item);
-    if(arr.length>max) arr.splice(0, arr.length-max);
-  }
+  let tBase=0, tFire=0, tElec=0;
+  let stickAngle=0, ringTickAcc=0;
+  let fields=[];
+
+  // ========= VFX =========
   function addTrail(x,y,color,r){
-    pushLimited(trails, {x,y,color,r,life:0.18,max:0.18}, MAX_TRAILS);
+    const t = trailPool.get();
+    t.x=x; t.y=y; t.color=color; t.r=r;
+    t.life=0.18; t.max=0.18;
   }
+
   function hitBurst(x,y,color,count=8){
-    count = Math.max(2, Math.floor(count * FX_MULT));
+    count = Math.max(2, Math.floor(count*FX_MULT));
     for(let i=0;i<count;i++){
       const a=Math.random()*Math.PI*2;
       const sp=120+Math.random()*280;
-      pushLimited(particles, {x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.45+Math.random()*0.2,max:0.65,rr:1.6+Math.random()*2.4,color}, MAX_PARTICLES);
+      const p = particlePool.get();
+      p.x=x; p.y=y;
+      p.vx=Math.cos(a)*sp; p.vy=Math.sin(a)*sp;
+      p.life=0.45+Math.random()*0.2; p.max=0.65;
+      p.rr=1.6+Math.random()*2.4;
+      p.color=color;
     }
   }
+
   function explosionFx(x,y,color,rad){
-    pushLimited(effects, {kind:"boom",x,y,r:rad,life:0.45,max:0.45,color}, MAX_EFFECTS);
+    const e = effectPool.get();
+    e.kind="boom"; e.x=x; e.y=y; e.r=rad;
+    e.life=0.45; e.max=0.45; e.color=color;
     hitBurst(x,y,color,18);
   }
 
-  // UI helpers
-  function setPauseText(){ 
-    if (pauseBtn) pauseBtn.textContent = running ? "Duraklat" : "Devam"; 
-  }
+  // ========= UI =========
+  function setPauseText(){ pauseBtn.textContent = running ? "Duraklat" : "Devam"; }
   function nowLevel(){ return Math.max(1, wave-1); }
-  function skillLevelCap(){ return Math.max(1, Math.floor(nowLevel()/5)); }
+  function skillLevelCap(){ return Math.max(1, Math.floor(nowLevel()/3)); }
 
   function applyPlayerLevelScaling(){
     const scale = Math.min(PLAYER_SCALE_MAX, 1 + (expLevel-1)*PLAYER_SCALE_PER_LVL);
     player.r = PLAYER_BASE_R * scale;
   }
 
-  // Resets
+  function getStickCount(){
+    if(skills.stick<=0) return 0;
+    const n = skills.stick + (permanentUpgrades.stickExtra.count|0);
+    return clamp(n, 1, STICK_MAX_COUNT);
+  }
+
+  function resetRunLocks(){ runLocks.bullet=null; runLocks.ring=null; }
+  function resetMarketAndGold(){
+    gold = 0;
+    for(const k in permanentUpgrades) permanentUpgrades[k].count = 0;
+  }
+
   function resetGameState(){
     enemyPool.releaseAll();
     bulletPool.releaseAll();
-    drops=[]; particles=[]; trails=[]; effects=[]; fields=[];
+    dropPool.releaseAll();
+    particlePool.releaseAll();
+    trailPool.releaseAll();
+    effectPool.releaseAll();
+    fields=[];
+
     kills=0; exp=0; expLevel=1; points=0;
     wave=1; spawnTimer=0;
     waveBannerT=0; waveBannerText="";
@@ -453,29 +508,28 @@
     mousePressed=false;
     uidGen=1;
 
-    gameOver=false;
-    playerDead=false;
-    deathWavesRemaining=0;
-    deathHoleT=0;
-    if (gameOverText) gameOverText.style.display="none";
+    gameOver=false; playerDead=false; deathHoleT=0; deathWavesRemaining=0;
+    gameOverText.style.display="none";
 
     player.x=W*0.5; player.y=H*0.5;
     player.hpMax=100; player.hp=100;
 
-    for(const k of Object.keys(skills)) skills[k]=0;
+    for(const k in skills) skills[k]=0;
 
     tBase=tFire=tElec=0;
-    stickAngle=0;
-    ringTickAcc=0;
+    stickAngle=0; ringTickAcc=0;
 
-    upgradeOptions=[]; autoPick=0; upgradeScreen=0; rerollUsed=false;
+    upgradeOptions=[]; autoPick=0; upgradeScreen=0;
     pausedByUpgrade=false;
-    if (upgradeOverlay) upgradeOverlay.style.display="none";
+    upgradeOverlay.style.display="none";
+
+    resetMarketAndGold();
+    resetRunLocks();
 
     applyPlayerLevelScaling();
   }
 
-  // Progression
+  // ========= Progression =========
   function gainExp(n){
     n = validateNumber(n, 0, 1000, 1);
     exp += n;
@@ -492,11 +546,24 @@
     openUpgradeIfNeeded();
   }
 
-  // Enemy spawning
+  function gainGold(n){
+    n = validateNumber(n, 0, 1e15, 0);
+    gold = Math.max(0, gold + n);
+  }
+
+  // ========= Enemies =========
   const hpMul = w => Math.pow(2, Math.floor((w-1)/5));
   const clampHP = hp => Math.max(1, Math.min(MAX_ENEMY_HP, Math.floor(hp)));
   function enemyCount(w){ return Math.max(1, Math.floor((10 + w*1.4) * ENEMY_DENSITY_MULT)); }
-  function enemySpeed(){ return ENEMY_BASE_SPEED; }
+
+  // Normal: level başına %1 hız artışı (sınır yok)
+  function enemySpeedNormal(w){
+    const mult = 1 + (Math.max(1,w)-1)*0.01;
+    return ENEMY_BASE_SPEED * mult;
+  }
+  // Boss: bu artıştan etkilenmez
+  function enemySpeedBoss(){ return ENEMY_BASE_SPEED; }
+
   function enemyDmg(w){ return 10 + w*0.7; }
 
   function randEdge(){
@@ -506,49 +573,60 @@
     if(side===2) return {x:Math.random()*W,y:-SPAWN_PADDING};
     return {x:Math.random()*W,y:H+SPAWN_PADDING};
   }
+  function randShape(){ return (Math.random()*3)|0; } // 0 circle, 1 square, 2 triangle
 
   function spawnNormalAt(x,y,w,type="normal", spawnImmuneT=0){
-    const mul=hpMul(w);
-    let hp=clampHP(BASE_MONSTER_HP*mul);
-    let sp=enemySpeed();
-    let r=11, kind="normal";
-    if(type==="fast"){ kind="fast"; hp=clampHP(hp*0.5); sp*=1.8; r=10; }
-    if(type==="tank"){ kind="tank"; hp=clampHP(hp*3.0); sp*=1/3; r=14; }
+    if(enemyPool.getActive().length >= MAX_ENEMIES) return;
+
+    const mul = hpMul(w);
+    let hp = clampHP(BASE_MONSTER_HP*mul);
+    let sp = enemySpeedNormal(w);
+    let r = 11, kind="normal";
+
+    // fast yok; tank var
+    if(type==="tank"){
+      kind="tank";
+      hp = clampHP(hp*3.0);
+      sp *= 1/3;
+      r = 14;
+    }
 
     const e = enemyPool.get();
-    if (!e) return;
-    e.uid=uidGen++;
-    e.kind=kind;
+    e.uid = uidGen++;
+    e.kind = kind;
+    e.shape = randShape();
     e.x=x; e.y=y; e.r=r;
     e.sp=sp;
     e.dmg=enemyDmg(w);
-    e.hp=hp;
-    e.hpMax=hp;
+    e.hp=hp; e.hpMax=hp;
     e.kvx=0; e.kvy=0;
     e.spawnImmuneT=spawnImmuneT;
   }
 
   function spawnBossAt(x,y,w,bossType="boss"){
+    if(enemyPool.getActive().length >= MAX_ENEMIES) return;
+
     const mul=hpMul(w);
     let sizeMult=BOSS_SIZE_MULT;
     let hpMult=10;
     let donut=false;
+
     if(bossType==="giant"){ sizeMult*=GIANT_BOSS_MULT; hpMult*=2.0; }
     if(bossType==="mega"){ sizeMult*=MEGA_BOSS_MULT; hpMult*=2.0; donut=true; }
 
     const hp=clampHP(hpMult*mul);
+
     const e = enemyPool.get();
-    if (!e) return;
-    e.uid=uidGen++;
+    e.uid = uidGen++;
     e.kind="boss";
+    e.shape=0;
     e.bossType=bossType;
     e.donut=donut;
     e.x=x; e.y=y;
     e.r=11*sizeMult;
-    e.sp=enemySpeed();
+    e.sp=enemySpeedBoss(); // boss hızlanma yok
     e.dmg=enemyDmg(w)*2.0;
-    e.hp=hp;
-    e.hpMax=hp;
+    e.hp=hp; e.hpMax=hp;
     e.state="chase";
     e.cd=0;
     e.retreatT=0;
@@ -559,29 +637,27 @@
   }
 
   function spawnBossDeathMinions(x,y,w){
-    const count = 10;
-    const baseDist = 90;
-    const extraDist = 40;
-    const minion2xDist = 2.0;
+    const count=10;
     for(let i=0;i<count;i++){
       const a=(i/count)*Math.PI*2;
-      const rr=(baseDist+Math.random()*extraDist)*minion2xDist;
+      const rr=(90+Math.random()*40)*2.0;
       spawnNormalAt(x+Math.cos(a)*rr, y+Math.sin(a)*rr, w, "normal", 0.10);
     }
   }
 
   function spawnBatch(w){
-    const n=enemyCount(w);
+    const n=Math.min(SPAWN_LIMIT_PER_WAVE, enemyCount(w));
     for(let i=0;i<n;i++){
       const p=randEdge();
       const r=Math.random();
-      if(r<0.15) spawnNormalAt(p.x,p.y,w,"fast");
-      else if(r<0.27) spawnNormalAt(p.x,p.y,w,"tank");
+      if(r<0.18) spawnNormalAt(p.x,p.y,w,"tank");
       else spawnNormalAt(p.x,p.y,w,"normal");
     }
 
-    if(w%5===0){
-      const bossCount=Math.floor(w/5);
+    // Boss her 3 seviyede
+    if(w%3===0){
+      const raw = Math.floor(w/3);
+      const bossCount = Math.min(MAX_BOSSES_PER_WAVE, raw);
       for(let b=0;b<bossCount;b++){
         const p=randEdge();
         spawnBossAt(p.x,p.y,w,"boss");
@@ -591,20 +667,34 @@
     if(w%50===0){ const p=randEdge(); spawnBossAt(p.x,p.y,w,"mega"); }
   }
 
-  // Drops
+  // ========= Drops =========
   function dropLoot(x,y,isBoss){
     const r=Math.random();
-    if(r < (isBoss?0.70:0.35)) drops.push({x,y,r:EXP_DROP_R,type:"exp",life:18,vx:0,vy:0});
-    if(r < (isBoss?0.35:0.10)) drops.push({x:x+8,y:y-6,r:HEALTH_DROP_R,type:"health",life:18,vx:0,vy:0});
-    if(isBoss && r < 0.50) drops.push({x:x-6,y:y+8,r:UPGRADE_DROP_R,type:"upgrade",life:18,vx:0,vy:0});
+
+    if(r < (isBoss?0.70:0.35)){
+      const d = dropPool.get();
+      d.x=x; d.y=y; d.r=EXP_DROP_R; d.type="exp"; d.life=18; d.vx=0; d.vy=0; d.amount=1;
+    }
+    if(r < (isBoss?0.35:0.10)){
+      const d = dropPool.get();
+      d.x=x+8; d.y=y-6; d.r=HEALTH_DROP_R; d.type="health"; d.life=18; d.vx=0; d.vy=0; d.amount=12;
+    }
+    if(isBoss && r < 0.50){
+      const d = dropPool.get();
+      d.x=x-6; d.y=y+8; d.r=UPGRADE_DROP_R; d.type="upgrade"; d.life=18; d.vx=0; d.vy=0; d.amount=1;
+    }
+    if(isBoss){
+      const goldAmount = Math.max(1, Math.floor(score*0.10));
+      const d = dropPool.get();
+      d.x=x; d.y=y-12; d.r=GOLD_DROP_R; d.type="gold"; d.life=18; d.vx=0; d.vy=0; d.amount=goldAmount;
+    }
   }
 
-  // Scoring / combo
-  const COMBO_TIMEOUT = 2.5;
+  // ========= score/combo =========
   function updateComboOnKill(){
     combo++;
-    comboT = COMBO_TIMEOUT;
-    comboBest = Math.max(comboBest, combo);
+    comboT=COMBO_TIMEOUT;
+    comboBest=Math.max(comboBest, combo);
   }
   function killAward(){
     if(playerDead) return;
@@ -614,10 +704,12 @@
     gainExp(1);
   }
 
-  // Explosion
+  // ========= Explosion/damage =========
   function explodeDamage(){
     if(skills.explode<=0) return 0;
-    return Math.min(60, 2 + Math.floor(skills.explode*1.10));
+    const baseDmg = Math.min(60, 2 + Math.floor(skills.explode*1.10));
+    const dmgBonus = permanentUpgrades.damageBonus.count * 0.50;
+    return baseDmg * (1 + dmgBonus);
   }
 
   function tryFreezeBoss(e){
@@ -641,14 +733,13 @@
   function triggerExplosionQueue(seeds){
     const dmg=explodeDamage();
     if(dmg<=0) return;
-
     const q=seeds.slice();
     let guard=0;
+
     while(q.length && guard++<220){
       const it=q.shift();
-      if (!it) continue;
-      const ex=it.x, ey=it.y, baseR=it.r;
-      const rad=Math.max(40, baseR*10);
+      const ex=it.x, ey=it.y;
+      const rad=Math.max(40, it.r*10);
       const r2=rad*rad;
 
       explosionFx(ex,ey,COL_EXPLODE,rad);
@@ -656,7 +747,6 @@
       const enemies = enemyPool.getActive();
       for(let i=enemies.length-1;i>=0;i--){
         const e=enemies[i];
-        if(!e) continue;
         if(dist2(ex,ey,e.x,e.y)<=r2){
           applyExplosionEffect(e);
           e.hp -= dmg;
@@ -664,13 +754,10 @@
           if(e.hp<=0){
             const wasBoss = e.kind==="boss";
             const x=e.x,y=e.y,r=e.r;
-
             dropLoot(x,y,wasBoss);
             enemyPool.release(e);
             killAward();
-
             if(wasBoss) spawnBossDeathMinions(x,y,wave);
-
             q.push({x,y,r});
           }
         }
@@ -679,159 +766,152 @@
   }
 
   function applyDamageAtIndex(e, dmg, color, allowExplode){
-    if(!e) return;
-
-    e.hp -= dmg;
-    hitBurst(e.x,e.y,color, (dmg>=4?12:8));
+    const dmgBonus = permanentUpgrades.damageBonus.count * 0.50;
+    const finalDmg = dmg * (1 + dmgBonus);
+    e.hp -= finalDmg;
+    hitBurst(e.x,e.y,color, (finalDmg>=4?12:8));
 
     if(e.hp<=0){
-      const wasBoss=e.kind==="boss";
+      const wasBoss = e.kind==="boss";
       const x=e.x,y=e.y,r=e.r;
-
       dropLoot(x,y,wasBoss);
       enemyPool.release(e);
       killAward();
-
       if(wasBoss) spawnBossDeathMinions(x,y,wave);
-
       if(allowExplode && skills.explode>0) triggerExplosionQueue([{x,y,r}]);
     }
   }
 
-  // Targeting helpers for ricochet
-  function nearestEnemiesFrom(x,y, count, excludeUid){
+  // ========= Targeting =========
+  function nearestEnemiesFrom(x,y,count, excludeUid){
     const arr=[];
-    const enemies = enemyPool.getActive();
-    for(const e of enemies){
-      if(!e) continue;
+    for(const e of enemyPool.getActive()){
       if(excludeUid && e.uid===excludeUid) continue;
-      const d=dist2(x,y,e.x,e.y);
-      arr.push({e,d});
+      arr.push({e, d:dist2(x,y,e.x,e.y)});
     }
     arr.sort((a,b)=>a.d-b.d);
-    return arr.slice(0,count).map(x=>x.e);
+    return arr.slice(0,count).map(o=>o.e);
   }
 
-  // Shooting: improved projectile counts
-  function shotsPerLevel(lv){ 
-    return Math.max(0, lv + Math.floor(lv/3));
+  // ========= Shooting =========
+  function shotsPerLevel(lv){ return Math.max(0, lv + Math.floor(lv/3)); }
+
+  function makeSpreadAngles(ang0, count, spread){
+    if(count<=1) return [ang0];
+    const angles=[];
+    for(let n=0;n<count;n++){
+      const t = (n/(count-1)-0.5);
+      angles.push(ang0 + t*spread);
+    }
+    // çift sayıda boşluk olmasın: en yakını merkeze hizala
+    let bestIdx=0, bestAbs=Infinity;
+    for(let i=0;i<angles.length;i++){
+      const ad=Math.abs(angles[i]-ang0);
+      if(ad<bestAbs){ bestAbs=ad; bestIdx=i; }
+    }
+    const shift=angles[bestIdx]-ang0;
+    for(let i=0;i<angles.length;i++) angles[i]-=shift;
+    return angles;
   }
 
-  function createBullet(kind, x, y, vx, vy, r, color, pierce, dmg, ricochetN = 0) {
+  function createBullet(kind, x,y, vx,vy, r,color, pierce,dmg, ricochetN=0){
     const b = bulletPool.get();
-    if (!b) return;
-    b.kind = kind;
-    b.x = x;
-    b.y = y;
-    b.vx = vx;
-    b.vy = vy;
-    b.r = r;
-    b.life = BULLET_LIFE;
-    b.color = color;
-    b.pierce = pierce;
-    b.dmg = dmg;
-    b.lastHitUid = 0;
-    b.lastHitT = 0;
-    b.ricochetN = ricochetN;
-    b.ricochetUsed = false;
+    b.kind=kind; b.x=x; b.y=y; b.vx=vx; b.vy=vy; b.r=r;
+    b.life=BULLET_LIFE; b.color=color;
+    b.pierce=pierce; b.dmg=dmg;
+    b.lastHitUid=0; b.lastHitT=0;
+    b.ricochetN=ricochetN; b.ricochetUsed=false;
   }
 
   function shootBase(){
-    const lv = skills.baseWeapon;
-    const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv);
-    const dmg = 1;
-    const speed = 780;
-    const radius = 4.8;
-    const idxs = nearestEnemiesFrom(player.x, player.y, 1, 0);
-    if(!idxs.length) return;
-    const target = idxs[0];
-    const ang0 = Math.atan2(target.y-player.y, target.x-player.x);
-    const spread = 0.20 + Math.min(0.30, (count-1)*0.05);
+    const lv=skills.baseWeapon;
+    let count = 1 + shotsPerLevel(lv);
+    count = Math.min(MAX_SHOTS_PER_SKILL, Math.max(1,count));
 
-    for(let n=0;n<count;n++){
-      const t=(count===1)?0:(n/(count-1)-0.5);
-      const a=ang0+t*spread;
-      createBullet("base", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_BASE, pierce, dmg);
+    const pierce = Math.max(1, lv);
+    const dmg=1, speed=780, radius=4.8;
+
+    const nearest = nearestEnemiesFrom(player.x,player.y,1,0);
+    if(!nearest.length) return;
+    const target=nearest[0];
+    const ang0=Math.atan2(target.y-player.y, target.x-player.x);
+    const spread=0.20 + Math.min(0.30,(count-1)*0.05);
+
+    for(const a of makeSpreadAngles(ang0,count,spread)){
+      createBullet("base", player.x,player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_BASE, pierce, dmg);
     }
   }
 
   function shootFire(){
-    const lv = skills.fireball;
+    const lv=skills.fireball;
     if(lv<=0) return;
-    const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv);
-    const dmg = 1;
-    const speed = 690;
-    const radius = 6.2;
+
+    const extraAmmo = permanentUpgrades.ammoBonus.count|0;
+    let count = 1 + shotsPerLevel(lv) + extraAmmo;
+    count = Math.min(MAX_SHOTS_PER_SKILL, Math.max(1,count));
+
+    const pierce=Math.max(1,lv);
+    const dmg=1, speed=690, radius=6.2;
 
     const nearest = nearestEnemiesFrom(player.x,player.y,1,0);
     if(!nearest.length) return;
     const target=nearest[0];
-    const ang0=Math.atan2(target.y-player.y,target.x-player.x);
+    const ang0=Math.atan2(target.y-player.y, target.x-player.x);
     const spread=0.22 + Math.min(0.34,(count-1)*0.05);
+    let ricochetN = Math.min(MAX_SHOTS_PER_SKILL, Math.floor(lv/2)+2);
 
-    const ricochetN = Math.floor(lv/2)+2;
-
-    for(let n=0;n<count;n++){
-      const t=(count===1)?0:(n/(count-1)-0.5);
-      const a=ang0+t*spread;
-      createBullet("fire", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_FIRE, pierce, dmg, ricochetN);
+    for(const a of makeSpreadAngles(ang0,count,spread)){
+      createBullet("fire", player.x,player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_FIRE, pierce, dmg, ricochetN);
     }
   }
 
   function shootElec(){
-    const lv = skills.electricBall;
+    const lv=skills.electricBall;
     if(lv<=0) return;
-    const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv);
-    const dmg = 1;
-    const speed = 705;
-    const radius = 6.0;
+
+    const extraAmmo = permanentUpgrades.ammoBonus.count|0;
+    let count = 1 + shotsPerLevel(lv) + extraAmmo;
+    count = Math.min(MAX_SHOTS_PER_SKILL, Math.max(1,count));
+
+    const pierce=Math.max(1,lv);
+    const dmg=1, speed=705, radius=6.0;
 
     const nearest = nearestEnemiesFrom(player.x,player.y,1,0);
     if(!nearest.length) return;
     const target=nearest[0];
-    const ang0=Math.atan2(target.y-player.y,target.x-player.x);
+    const ang0=Math.atan2(target.y-player.y, target.x-player.x);
     const spread=0.22 + Math.min(0.34,(count-1)*0.05);
 
-    for(let n=0;n<count;n++){
-      const t=(count===1)?0:(n/(count-1)-0.5);
-      const a=ang0+t*spread;
-      createBullet("elec", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_ELEC, pierce, dmg);
+    for(const a of makeSpreadAngles(ang0,count,spread)){
+      createBullet("elec", player.x,player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_ELEC, pierce, dmg);
     }
   }
 
   function spawnElectricField(x,y, lv){
-    const dur = (lv/3) + 2;
-    const radius = player.r * 3.0;
+    const dur = (lv/3)+2;
+    const radius = player.r*3.0;
     const dps = 1 + Math.floor(lv/3);
     fields.push({x,y,r:radius, t:dur, tickAcc:0, dps});
     if(fields.length>80) fields.splice(0, fields.length-80);
   }
 
-  function doFireRicochet(fromX, fromY, excludeUid, n){
-    const targets = nearestEnemiesFrom(fromX, fromY, n, excludeUid);
+  function doFireRicochet(fromX,fromY, excludeUid, n){
+    const targets = nearestEnemiesFrom(fromX,fromY,n,excludeUid);
     for(const t of targets){
-      if (!t) continue;
-      const ang=Math.atan2(t.y-fromY, t.x-fromX);
+      const ang = Math.atan2(t.y-fromY, t.x-fromX);
       const speed=720;
-      createBullet("fire", fromX, fromY, Math.cos(ang)*speed, Math.sin(ang)*speed, 5.4, COL_FIRE, 1, 1, 0);
+      createBullet("fire", fromX,fromY, Math.cos(ang)*speed, Math.sin(ang)*speed, 5.4, COL_FIRE, 1, 1, 0);
       const bullets = bulletPool.getActive();
-      if(bullets.length > 0) {
-        const lastBullet = bullets[bullets.length - 1];
-        if (lastBullet) lastBullet.ricochetUsed = true;
-      }
+      if(bullets.length) bullets[bullets.length-1].ricochetUsed = true;
     }
   }
 
-  // Stick
+  // ========= Stick =========
   function stickMult(){
     if(skills.stick<=0) return 0;
-    const m=STICK_BASE_MULT*(1+Math.min(1,(skills.stick-1)*0.10));
-    return Math.min(STICK_MAX_MULT,m);
+    const m = STICK_BASE_MULT*(1+Math.min(1,(skills.stick-1)*0.10));
+    return Math.min(STICK_MAX_MULT, m);
   }
-  function stickCount(){ return skills.stick<=0?0:(1+Math.floor((skills.stick-1)/3)); }
   function stickLen(){ return 220*stickMult(); }
   function stickWid(){ return STICK_BASE_WIDTH*stickMult(); }
   function stickSpd(){ return 2.0 + skills.stick*0.15; }
@@ -840,13 +920,13 @@
     const abx=bx-ax, aby=by-ay;
     const apx=px-ax, apy=py-ay;
     const ab2=abx*abx+aby*aby;
-    const t=ab2===0?0:clamp((apx*abx+apy*aby)/ab2,0,1);
+    const t = ab2===0 ? 0 : clamp((apx*abx+apy*aby)/ab2,0,1);
     const cx=ax+abx*t, cy=ay+aby*t;
     return dist2(px,py,cx,cy);
   }
 
   function sticksUpdate(dt){
-    const c=stickCount(), L=stickLen(), Wd=stickWid();
+    const c=getStickCount(), L=stickLen(), Wd=stickWid();
     if(c<=0) return;
     stickAngle += dt*stickSpd();
 
@@ -859,50 +939,37 @@
       const bx=ax+Math.cos(a)*L;
       const by=ay+Math.sin(a)*L;
 
-      pushLimited(effects,{kind:"stick",ax,ay,bx,by,w:Wd,life:0.08,max:0.08},MAX_EFFECTS);
+      const ef = effectPool.get();
+      ef.kind="stick"; ef.ax=ax; ef.ay=ay; ef.bx=bx; ef.by=by;
+      ef.w=Wd; ef.life=0.08; ef.max=0.08;
 
       const w2=(Wd+12)*(Wd+12);
       for(let i=enemies.length-1;i>=0;i--){
         const e=enemies[i];
-        if(!e) continue;
-        if(distSeg2(e.x,e.y,ax,ay,bx,by)<=w2) applyDamageAtIndex(e,HIT_DAMAGE,COL_ELEC_RING,true);
+        if(distSeg2(e.x,e.y,ax,ay,bx,by)<=w2){
+          applyDamageAtIndex(e, 1, COL_ELEC_RING, true);
+        }
       }
     }
   }
 
-  // Rings
-  function ringTickDmg(lv){ 
-    return lv<=0?0:(1+Math.floor((lv-1)/3)); 
-  }
-  function fireRingRadius(){ return skills.fireRing<=0?0:(RING_BASE + skills.fireRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
-  function elecRingRadius(){ return skills.electricRing<=0?0:(RING_BASE + skills.electricRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
+  // ========= Rings =========
+  function ringTickDmg(lv){ return lv<=0 ? 0 : (1+Math.floor((lv-1)/3)); }
+  function fireRingRadius(){ return skills.fireRing<=0 ? 0 : (RING_BASE + skills.fireRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
+  function elecRingRadius(){ return skills.electricRing<=0 ? 0 : (RING_BASE + skills.electricRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
 
-  function fireRingDamage() {
-    const baseDmg = ringTickDmg(skills.fireRing);
-    return baseDmg * 1.5;
+  function fireRingDamage(){
+    const base = ringTickDmg(skills.fireRing);
+    const dmgBonus = permanentUpgrades.damageBonus.count*0.50;
+    return base*1.5*(1+dmgBonus);
   }
-
-  function elecRingDamage() {
-    const baseDmg = ringTickDmg(skills.electricRing);
-    return baseDmg * 1.5;
-  }
-
-  // Retreat
-  function setBossRetreat(e){
-    if(!e) return;
-    const dx=e.x-player.x, dy=e.y-player.y;
-    const len=Math.hypot(dx,dy)||1;
-    const nx=dx/len, ny=dy/len;
-    const tx=player.x + nx*BOSS_RETREAT_DIST;
-    const ty=player.y + ny*BOSS_RETREAT_DIST;
-    const pad=e.r+18;
-    e.tx=clamp(tx,pad,W-pad);
-    e.ty=clamp(ty,pad,H-pad);
-    e.state="retreat";
-    e.retreatT=BOSS_RETREAT_TIME;
+  function elecRingDamage(){
+    const base = ringTickDmg(skills.electricRing);
+    const dmgBonus = permanentUpgrades.damageBonus.count*0.50;
+    return base*1.5*(1+dmgBonus);
   }
 
-  // Soft push
+  // ========= Movement bounds =========
   function softPushPlayer(){
     const minX=player.r, maxX=W-player.r;
     const minY=player.r, maxY=H-player.r;
@@ -915,7 +982,7 @@
     player.y=clamp(player.y,minY,maxY);
   }
 
-  // Death
+  // ========= Death =========
   function handlePlayerDeath(){
     if(playerDead) return;
     player.hp=0;
@@ -923,7 +990,7 @@
     playerDead=true;
     deathWavesRemaining=3;
     deathHoleT=0;
-    if (gameOverText) gameOverText.style.display="block";
+    gameOverText.style.display="block";
     explosionFx(player.x,player.y,"rgba(255,255,255,0.95)",340);
     for(let i=0;i<7;i++){
       const a=(i/7)*Math.PI*2;
@@ -932,146 +999,260 @@
     }
   }
 
-  // Upgrades (simple)
-  const bannedUntil={};
+  // ========= Upgrades =========
+  const bannedUntil = {};
   function banned(id){ return (bannedUntil[id]??0) > upgradeScreen; }
+
+  function lockedOutByChoice(id){
+    // SADECE karşılıklı iki skill kilidi. Stick burada asla yok.
+    if(runLocks.bullet==="fire" && id==="electricBall") return true;
+    if(runLocks.bullet==="elec" && id==="fireball") return true;
+    if(runLocks.ring==="fire" && id==="electricRing") return true;
+    if(runLocks.ring==="elec" && id==="fireRing") return true;
+    return false;
+  }
+
   function capOk(id){
-    const cap=skillLevelCap();
+    const cap = skillLevelCap();
     return skills[id] < Math.min(SKILL_CAP, cap);
   }
-  function available(id){ return capOk(id) && !banned(id); }
+
+  function available(id){
+    return capOk(id) && !banned(id) && !lockedOutByChoice(id);
+  }
+
   function randPick(arr){ return arr[(Math.random()*arr.length)|0]; }
-  function weight(id){ return skills[id]===0?3:1; } // Minimum yeteneklere daha fazla ağırlık
+  function weight(id){ return skills[id]===0 ? 3 : 1; }
+  function pickBonusId(){ return BONUS_IDS[(Math.random()*BONUS_IDS.length)|0]; }
 
   function chooseUpgradeOptions(){
-    const ids=Object.keys(skills).filter(available);
-    if(ids.length===0) return [];
-    const chosen=new Set();
+    const ids = Object.keys(skills).filter(available);
+    const chosen = new Set();
 
-    let maxLv=-Infinity, minLv=Infinity;
-    for(const id of ids){ maxLv=Math.max(maxLv,skills[id]); minLv=Math.min(minLv,skills[id]); }
-    const maxPool=ids.filter(id=>skills[id]===maxLv);
-    const minPool=ids.filter(id=>skills[id]===minLv);
+    if(ids.length){
+      let maxLv=-Infinity, minLv=Infinity;
+      for(const id of ids){ maxLv=Math.max(maxLv,skills[id]); minLv=Math.min(minLv,skills[id]); }
+      const maxPool=ids.filter(id=>skills[id]===maxLv);
+      const minPool=ids.filter(id=>skills[id]===minLv);
 
-    if(maxPool.length) chosen.add(randPick(maxPool));
-    if(minPool.length && chosen.size<4) chosen.add(randPick(minPool));
-    if(minPool.length && chosen.size<4) chosen.add(randPick(minPool)); // +1 minimum yetenek
+      if(maxPool.length) chosen.add(randPick(maxPool));
+      if(minPool.length && chosen.size<3) chosen.add(randPick(minPool));
 
-    while(chosen.size<4){
-      const pool=ids.filter(id=>!chosen.has(id));
-      if(!pool.length) break;
-      const total=pool.reduce((s,id)=>s+weight(id),0);
-      let r=Math.random()*total;
-      let pick=pool[pool.length-1];
-      for(const id of pool){ r-=weight(id); if(r<=0){ pick=id; break; } }
-      chosen.add(pick);
+      while(chosen.size<3){
+        const pool=ids.filter(id=>!chosen.has(id));
+        if(!pool.length) break;
+        const total=pool.reduce((s,id)=>s+weight(id),0);
+        let r=Math.random()*total;
+        let pick=pool[pool.length-1];
+        for(const id of pool){ r-=weight(id); if(r<=0){ pick=id; break; } }
+        chosen.add(pick);
+      }
     }
-    return [...chosen];
+
+    const list=[...chosen].slice(0,3);
+    list.push(pickBonusId()); // 4th always bonus
+    return list;
   }
 
   function nameSkill(id){
     return ({
       baseWeapon:"Temel Otomatik Saldırı",
-      fireball:"Ateş Topu",
-      electricBall:"Elektrik Topu",
+      fireball:"Ateş Mermisi",
+      electricBall:"Elektrik Mermisi",
       fireRing:"Ateş Halkası",
       electricRing:"Elektrik Halkası",
       stick:"Elektrik Çubuğu",
-      explode:"Patlama"
+      explode:"Patlama",
+      bonus_ammo:"+1 İlave Mermi",
+      bonus_stick:"+1 Ekstra Çubuk",
+      bonus_damage:"+50% Hasar"
     })[id] ?? id;
   }
 
   function renderUpgradeOptions(){
-    if (!optsEl) return;
     optsEl.innerHTML="";
     const cap=skillLevelCap();
-    upgradeOptions.forEach((id,idx)=>{
+
+    upgradeOptions.forEach((id, idx)=>{
       const btn=document.createElement("button");
       btn.className="opt";
-      btn.innerHTML=`
-        <span class="k">(${idx+1}) ${nameSkill(id)} (Sv ${skills[id]} → ${Math.min(cap,skills[id]+1)} / Cap ${cap})</span>
-        <span class="d">${idx+1} tuşu veya tıkla.</span>
-      `;
-      btn.addEventListener("click",()=>applyUpgrade(idx,false));
+
+      if(id.startsWith("bonus_")){
+        btn.innerHTML =
+          `<span class="k">(${idx+1}) ${nameSkill(id)}</span>` +
+          `<span class="d">${BONUS_DESC[id] ?? ""}</span>`;
+      } else {
+        const cur = skills[id];
+        const next = Math.min(cap, cur+1);
+        btn.innerHTML =
+          `<span class="k">(${idx+1}) ${nameSkill(id)} (Sv ${cur} → ${next} / Cap ${cap})</span>` +
+          `<span class="d">${idx+1} tuşu veya tıkla.</span>`;
+      }
+
+      btn.addEventListener("click", ()=>applyUpgrade(idx,false));
       optsEl.appendChild(btn);
     });
   }
 
   function openUpgradeIfNeeded(){
-    if(!started || !running || pausedByUpgrade || gameOver || playerDead) return;
+    if(!started || !running || pausedByUpgrade || restartConfirmOpen || marketIsOpen() || gameOver || playerDead) return;
     if(points<=0) return;
 
-    const opts=chooseUpgradeOptions();
-    if(opts.length===0) return;
+    const opts = chooseUpgradeOptions();
+    if(!opts.length) return;
 
     pausedByUpgrade=true;
-    if (upgradeOverlay) upgradeOverlay.style.display="flex";
+    upgradeOverlay.style.display="flex";
     upgradeScreen++;
-
-    upgradeOptions=opts;
-    rerollUsed=false;
+    upgradeOptions = opts;
 
     renderUpgradeOptions();
-    autoPick=10.0;
-    if (autoPickText) autoPickText.textContent="10";
 
-    if (rerollBtn) rerollBtn.style.display = (upgradeScreen%5===0) ? "inline-block" : "none";
+    autoPick=10.0;
+    autoPickText.textContent="10";
   }
 
   function closeUpgrade(){
-    if (upgradeOverlay) upgradeOverlay.style.display="none";
+    upgradeOverlay.style.display="none";
     pausedByUpgrade=false;
     if(points>0) openUpgradeIfNeeded();
   }
 
-  function applyUpgrade(idx,isAuto){
-    if(points<=0) return closeUpgrade();
-    const id=upgradeOptions[idx];
-    if(!id) return closeUpgrade();
+  function applyRunLocksOnFirstPick(id){
+    if(id==="fireball" && skills.fireball===1 && runLocks.bullet===null) runLocks.bullet="fire";
+    if(id==="electricBall" && skills.electricBall===1 && runLocks.bullet===null) runLocks.bullet="elec";
+    if(id==="fireRing" && skills.fireRing===1 && runLocks.ring===null) runLocks.ring="fire";
+    if(id==="electricRing" && skills.electricRing===1 && runLocks.ring===null) runLocks.ring="elec";
+  }
 
-    if(capOk(id)) skills[id]++;
-    if(skills[id]>5) bannedUntil[id]=upgradeScreen+5;
+  function applyBonus(id){
+    if(id==="bonus_ammo") permanentUpgrades.ammoBonus.count++;
+    else if(id==="bonus_stick") permanentUpgrades.stickExtra.count++;
+    else if(id==="bonus_damage") permanentUpgrades.damageBonus.count++;
+  }
+
+  function applyUpgrade(idx,isAuto){
+    if(points<=0) { closeUpgrade(); return; }
+    const id = upgradeOptions[idx];
+    if(!id){ closeUpgrade(); return; }
+
+    if(id.startsWith("bonus_")){
+      applyBonus(id);
+    } else {
+      if(capOk(id)){
+        skills[id]++;
+        applyRunLocksOnFirstPick(id);
+      }
+      if(skills[id]>5) bannedUntil[id]=upgradeScreen+5;
+    }
 
     points=Math.max(0,points-1);
     closeUpgrade();
 
-    if(isAuto){
-      running=false;
-      setPauseText();
-      resumeMsgT=0;
-    }
+    // (düzeltme) Auto-pick oyunu DURDURMAZ (eskiden running=false yapıyordu)
+    // isAuto parametresi artık sadece bilgi amaçlı.
+    void isAuto;
   }
 
   function tickAutoPick(dt){
-    if(!pausedByUpgrade || !running || gameOver || playerDead) return;
+    if(!pausedByUpgrade || !running || restartConfirmOpen || marketIsOpen() || gameOver || playerDead) return;
     autoPick -= dt;
-    if (autoPickText) autoPickText.textContent = String(Math.max(0, Math.ceil(autoPick)));
+    autoPickText.textContent = String(Math.max(0, Math.ceil(autoPick)));
     if(autoPick<=0){
-      const r=(Math.random()*upgradeOptions.length)|0;
+      const r = (Math.random()*upgradeOptions.length)|0;
       applyUpgrade(r,true);
     }
   }
 
-  function doReroll(){
-    if(!(upgradeScreen%5===0)) return;
-    if(rerollUsed) return;
-    rerollUsed=true;
-    const opts=chooseUpgradeOptions();
-    if(!opts.length) return;
-    upgradeOptions=opts;
-    renderUpgradeOptions();
-    autoPick=10.0;
-    if (autoPickText) autoPickText.textContent="10";
-    if (rerollBtn) rerollBtn.style.display="none";
+  // ========= Market =========
+  function getMarketCost(key){
+    const u = permanentUpgrades[key];
+    return Math.floor(u.baseCost * Math.pow(2, u.count));
   }
 
-  // Build
-  function buildTop3(){
-    return Object.keys(skills).map(k=>({k,v:skills[k]})).filter(x=>x.v>0)
-      .sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.k}:${x.v}`).join("  ") || "-";
+  function renderMarket(){
+    marketGrid.innerHTML="";
+    marketGoldText.textContent = String(gold);
+
+    for(const key of Object.keys(permanentUpgrades)){
+      const u = permanentUpgrades[key];
+      const cost = getMarketCost(key);
+      const canBuy = gold >= cost;
+
+      const item = document.createElement("div");
+      item.className = "marketItem" + (canBuy ? "" : " disabled");
+      item.innerHTML =
+        `<div class="itemName">${u.name}</div>`+
+        `<div class="itemDesc">${u.desc}</div>`+
+        `<div class="itemPrice">💰 ${cost}</div>`+
+        `<div class="itemOwned">Sahip: ${u.count}</div>`;
+
+      if(canBuy) item.addEventListener("click", ()=>buyUpgrade(key));
+      marketGrid.appendChild(item);
+    }
   }
 
-  // Draw helpers
+  function buyUpgrade(key){
+    const cost=getMarketCost(key);
+    if(gold<cost) return;
+    gold -= cost;
+    permanentUpgrades[key].count++;
+    renderMarket();
+  }
+
+  function marketIsOpen(){ return marketOverlay.style.display==="flex"; }
+
+  function openMarket(){
+    if(!started || gameOver || playerDead || restartConfirmOpen) return;
+    running=false; setPauseText();
+    marketOverlay.style.display="flex";
+    renderMarket();
+  }
+
+  function closeMarket(){
+    marketOverlay.style.display="none";
+    running=true; setPauseText();
+  }
+
+  function toggleMarket(){ marketIsOpen() ? closeMarket() : openMarket(); }
+
+  // ========= Restart confirm =========
+  function openRestartConfirm(){
+    if(!started) return;
+    if(restartConfirmOpen) return;
+    if(pausedByUpgrade) return;
+    if(marketIsOpen()) return;
+
+    restartConfirmOpen=true;
+    runningBeforeRestartConfirm=running;
+    running=false; setPauseText();
+    restartOverlay.style.display="flex";
+  }
+
+  function closeRestartConfirm(restore){
+    restartConfirmOpen=false;
+    restartOverlay.style.display="none";
+    if(restore){
+      running=runningBeforeRestartConfirm;
+      setPauseText();
+      if(running){ resumeMsgT=RESUME_MSG_DUR; openUpgradeIfNeeded(); }
+    }
+  }
+
+  function confirmRestartYes(){
+    if(!restartConfirmOpen) return;
+    closeRestartConfirm(false);
+    resetGameState();
+    running=true; setPauseText();
+    resumeMsgT=RESUME_MSG_DUR;
+  }
+
+  function confirmRestartNo(){
+    if(!restartConfirmOpen) return;
+    closeRestartConfirm(true);
+  }
+
+  // ========= Draw =========
   function drawIsoGrid(lineColor, tile){
     const ox=(wave*7)%tile;
     const oy=(wave*5)%tile;
@@ -1098,10 +1279,8 @@
   function drawBackground(level){
     const idx=Math.floor((level-1)/10)%BG_CYCLE.length;
     currentBG=BG_CYCLE[idx];
-    ctx.save();
     ctx.fillStyle=currentBG.bg;
     ctx.fillRect(0,0,W,H);
-    ctx.restore();
     drawIsoGrid(currentBG.line,56);
   }
 
@@ -1127,28 +1306,11 @@
 
   function drawDonutPlayer(){
     const r=Math.max(10,player.r);
-    const baseInner=r*0.375;
-
-    const t=deathHoleT;
-    let inner=baseInner;
-
-    if(playerDead){
-      const coverT = clamp(t/DEATH_HOLE_COVER_DUR,0,1);
-      inner = baseInner + (r-baseInner)*coverT;
-
-      if(t > DEATH_HOLE_COVER_DUR){
-        const extraT = clamp((t-DEATH_HOLE_COVER_DUR)/DEATH_HOLE_EXTRA_DUR,0,1);
-        inner = r + (3*r - r)*extraT;
-      }
-    }
-
     ctx.save();
     ctx.fillStyle=COL_PLAYER;
     ctx.beginPath(); ctx.arc(player.x,player.y,r,0,Math.PI*2); ctx.fill();
-
     ctx.fillStyle="rgba(0,0,0,0.92)";
-    ctx.beginPath(); ctx.arc(player.x,player.y,inner,0,Math.PI*2); ctx.fill();
-
+    ctx.beginPath(); ctx.arc(player.x,player.y,r*0.375,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle="rgba(255,255,255,0.55)";
     ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(player.x,player.y,r+1,0,Math.PI*2); ctx.stroke();
@@ -1157,9 +1319,43 @@
 
   function enemyColor(e){
     if(e.kind==="tank") return "rgba(127,29,29,0.95)";
-    if(e.kind==="fast") return "rgba(255,255,255,0.92)";
     if(e.kind==="boss") return "rgba(248,113,113,0.95)";
     return "rgba(251,113,133,0.95)";
+  }
+
+  function drawEnemyShape(e, col){
+    ctx.save();
+    ctx.fillStyle=col;
+
+    if(e.kind==="boss"){
+      if(e.donut){
+        ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=currentBG.bg;
+        ctx.beginPath(); ctx.arc(e.x,e.y,e.r*0.35,0,Math.PI*2); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
+
+    if(e.shape===1){
+      ctx.fillRect(e.x-e.r, e.y-e.r, e.r*2, e.r*2);
+    } else if(e.shape===2){
+      const a0=-Math.PI/2;
+      ctx.beginPath();
+      for(let i=0;i<3;i++){
+        const a=a0+i*(Math.PI*2/3);
+        const px=e.x+Math.cos(a)*e.r;
+        const py=e.y+Math.sin(a)*e.r;
+        if(i===0) ctx.moveTo(px,py);
+        else ctx.lineTo(px,py);
+      }
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
   }
 
   function drawBossHpText(e){
@@ -1174,12 +1370,11 @@
     ctx.restore();
   }
 
-  // Main draw
   function draw(){
     const levelNow=nowLevel();
     drawBackground(levelNow);
 
-    const fr=fireRingRadius();
+    const fr = fireRingRadius();
     if(fr>0){
       ctx.save();
       ctx.fillStyle="rgba(239,68,68,0.06)";
@@ -1189,7 +1384,7 @@
       ctx.beginPath(); ctx.arc(player.x,player.y,fr,0,Math.PI*2); ctx.stroke();
       ctx.restore();
     }
-    const er=elecRingRadius();
+    const er = elecRingRadius();
     if(er>0){
       ctx.save();
       ctx.fillStyle="rgba(34,211,238,0.06)";
@@ -1202,49 +1397,37 @@
 
     for(const f of fields){
       ctx.save();
-      const a = clamp(f.t/2.0,0,1);
-      ctx.globalAlpha = 0.10 + a*0.10;
-      ctx.fillStyle = "rgba(59,130,246,1)";
+      ctx.globalAlpha=0.18;
+      ctx.fillStyle="rgba(59,130,246,1)";
       ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = "rgba(59,130,246,1)";
-      ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.stroke();
       ctx.restore();
     }
 
     const enemies = enemyPool.getActive();
     for(const e of enemies){
-      if(!e) continue;
-      ctx.save();
       const col=enemyColor(e);
-      ctx.fillStyle=col;
-      if(e.kind==="boss" && e.donut){
-        ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=currentBG.bg;
-        ctx.beginPath(); ctx.arc(e.x,e.y,e.r*0.35,0,Math.PI*2); ctx.fill();
-      }else{
-        ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
-      }
+      drawEnemyShape(e,col);
+
+      ctx.save();
       ctx.globalAlpha=0.10;
       ctx.fillStyle=col;
       ctx.beginPath(); ctx.arc(e.x,e.y,e.r*2.2,0,Math.PI*2); ctx.fill();
       ctx.restore();
+
       if(e.kind==="boss") drawBossHpText(e);
     }
 
-    for(const d of drops){
+    for(const d of dropPool.getActive()){
       ctx.save();
       if(d.type==="health") ctx.fillStyle="rgba(34,197,94,0.95)";
       else if(d.type==="exp") ctx.fillStyle="rgba(96,165,250,0.95)";
+      else if(d.type==="gold") ctx.fillStyle="rgba(255,215,0,0.95)";
       else ctx.fillStyle="rgba(250,204,21,0.95)";
       ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2); ctx.fill();
-      ctx.globalAlpha=0.14;
-      ctx.beginPath(); ctx.arc(d.x,d.y,d.r*3.0,0,Math.PI*2); ctx.fill();
       ctx.restore();
     }
 
-    for(const tr of trails){
+    for(const tr of trailPool.getActive()){
       const a=Math.max(0,tr.life/tr.max);
       ctx.save();
       ctx.globalAlpha=a*0.55;
@@ -1253,7 +1436,7 @@
       ctx.restore();
     }
 
-    for(const ef of effects){
+    for(const ef of effectPool.getActive()){
       const a=Math.max(0,ef.life/ef.max);
       ctx.save();
       ctx.globalAlpha=a;
@@ -1261,29 +1444,22 @@
         ctx.strokeStyle=COL_ELEC_RING;
         ctx.lineWidth=ef.w;
         ctx.beginPath(); ctx.moveTo(ef.ax,ef.ay); ctx.lineTo(ef.bx,ef.by); ctx.stroke();
-      }else if(ef.kind==="boom"){
+      } else if(ef.kind==="boom"){
         ctx.fillStyle=ef.color;
         ctx.globalAlpha=a*0.16;
         ctx.beginPath(); ctx.arc(ef.x,ef.y,ef.r,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle=ef.color;
-        ctx.globalAlpha=a*0.55;
-        ctx.lineWidth=10;
-        ctx.beginPath(); ctx.arc(ef.x,ef.y,ef.r,0,Math.PI*2); ctx.stroke();
       }
       ctx.restore();
     }
 
-    const bullets = bulletPool.getActive();
-    for(const b of bullets){
+    for(const b of bulletPool.getActive()){
       ctx.save();
       ctx.fillStyle=b.color;
       ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
-      ctx.globalAlpha=0.18;
-      ctx.beginPath(); ctx.arc(b.x,b.y,b.r*4.0,0,Math.PI*2); ctx.fill();
       ctx.restore();
     }
 
-    for(const p of particles){
+    for(const p of particlePool.getActive()){
       const a=Math.max(0,p.life/p.max);
       ctx.save();
       ctx.globalAlpha=a;
@@ -1298,7 +1474,7 @@
       const a=Math.min(1,waveBannerT/WAVE_BANNER_DUR);
       drawCenteredText(waveBannerText,"",a);
     }
-    if(started && !running){
+    if(started && !running && !pausedByUpgrade && !restartConfirmOpen && !marketIsOpen()){
       drawCenteredText("DURAKLATILDI","Devam için P veya Space",1);
     }
     if(resumeMsgT>0){
@@ -1306,67 +1482,61 @@
       drawCenteredText("DEVAM","",a);
     }
 
-    const need=expNeed(expLevel);
-    if (hpText) hpText.textContent=String(Math.ceil(player.hp));
-    if (hpMaxText) hpMaxText.textContent=String(player.hpMax);
-    if (hpBar) hpBar.style.width=`${clamp((player.hp/player.hpMax)*100,0,100)}%`;
-    if (xpText) xpText.textContent=`${Math.floor(exp)}/${need}`;
-    if (xpBar) xpBar.style.width=`${clamp((exp/need)*100,0,100)}%`;
+    // HUD
+    const need = expNeed(expLevel);
+    hpText.textContent=String(Math.ceil(player.hp));
+    hpMaxText.textContent=String(player.hpMax);
+    hpBar.style.width = `${clamp((player.hp/player.hpMax)*100,0,100)}%`;
 
-    if (statText) statText.textContent =
-      `Seviye:${levelNow} | Süre:${timeAlive.toFixed(1)}s | Skor:${Math.floor(score)} | Combo:${combo} (Best ${comboBest}) | Kart kilidi:${cardLockT.toFixed(1)}s`;
+    xpText.textContent = `${Math.floor(exp)}/${need}`;
+    xpBar.style.width = `${clamp((exp/need)*100,0,100)}%`;
 
-    if (buildText) buildText.textContent =
-      `Build: ${buildTop3()} | Skill cap: ${skillLevelCap()} | Düşman:${enemies.length} | Mermi:${bullets.length} | Field:${fields.length}`;
+    goldText.textContent = String(gold);
+
+    const normalMult = 1 + (Math.max(1,levelNow)-1)*0.01;
+    statText.textContent =
+      `Seviye:${levelNow} | Süre:${timeAlive.toFixed(1)}s | Skor:${Math.floor(score)} | Combo:${combo} (Best ${comboBest}) | NormalHız:${(normalMult*100).toFixed(0)}%`;
+
+    buildText.textContent =
+      `Skill base:${skills.baseWeapon} fire:${skills.fireball} elec:${skills.electricBall} ringF:${skills.fireRing} ringE:${skills.electricRing} stick:${skills.stick} | Bonus(Ammo:${permanentUpgrades.ammoBonus.count} Stick:${permanentUpgrades.stickExtra.count} Dmg:${permanentUpgrades.damageBonus.count})`;
   }
 
-  // Mechanics: collision helper
-  function bulletHitEnemy(b, e){
-    if(!b || !e) return false;
-
+  // ========= Collisions =========
+  function bulletHitEnemy(b,e){
     if(b.lastHitT>0 && b.lastHitUid===e.uid) return false;
 
-    applyDamageAtIndex(e, b.dmg || 1, b.color, true);
+    applyDamageAtIndex(e, b.dmg||1, b.color, true);
 
     if(b.kind==="elec"){
-      const lv = skills.electricBall;
-      spawnElectricField(e.x, e.y, lv);
+      spawnElectricField(e.x,e.y, skills.electricBall);
     } else if(b.kind==="fire"){
       if(!b.ricochetUsed && b.ricochetN>0){
-        b.ricochetUsed = true;
-        doFireRicochet(e.x, e.y, e.uid, b.ricochetN);
+        b.ricochetUsed=true;
+        doFireRicochet(e.x,e.y,e.uid,b.ricochetN);
       }
     }
 
     b.lastHitUid = e.uid;
     b.lastHitT = BULLET_SAME_HIT_CD;
 
-    if(b.pierce>0){
-      b.pierce--;
-      b.x += b.vx * 0.01;
-      b.y += b.vy * 0.01;
-      return true;
-    }else{
-      return false;
-    }
+    if(b.pierce>0){ b.pierce--; return true; }
+    return false;
   }
 
-  // Update: enemy contact
   function enemyContactCheck(dt){
     const enemies = enemyPool.getActive();
     for(let i=enemies.length-1;i>=0;i--){
       const e=enemies[i];
-      if(!e) continue;
       const rr=player.r+e.r;
       if(dist2(player.x,player.y,e.x,e.y)<=rr*rr){
         if(e.kind==="boss"){
-          if((e.cd||0)<=0 && e.state!=="retreat" && (e.freezeT||0)<=0){
+          if(e.cd<=0 && e.state!=="retreat" && e.freezeT<=0){
             player.hp -= BOSS_HIT_DAMAGE;
             e.cd = BOSS_HIT_COOLDOWN;
             setBossRetreat(e);
             hitBurst(player.x,player.y,"rgba(147,197,253,0.9)",10);
           }
-        }else{
+        } else {
           player.hp -= e.dmg*(1-0.05);
           hitBurst(player.x,player.y,"rgba(96,165,250,0.9)",12);
           dropLoot(e.x,e.y,false);
@@ -1377,9 +1547,22 @@
     }
   }
 
-  // Dash
+  function setBossRetreat(e){
+    const dx=e.x-player.x, dy=e.y-player.y;
+    const len=Math.hypot(dx,dy)||1;
+    const nx=dx/len, ny=dy/len;
+    const tx=player.x + nx*BOSS_RETREAT_DIST;
+    const ty=player.y + ny*BOSS_RETREAT_DIST;
+    const pad=e.r+18;
+    e.tx=clamp(tx,pad,W-pad);
+    e.ty=clamp(ty,pad,H-pad);
+    e.state="retreat";
+    e.retreatT=BOSS_RETREAT_TIME;
+  }
+
+  // ========= Pause/Dash =========
   function tryDash(){
-    if(!started || !running || pausedByUpgrade || playerDead) return;
+    if(!started || !running || pausedByUpgrade || restartConfirmOpen || marketIsOpen() || playerDead) return;
     if(dashCd>0) return;
     if(!(lastMoveX||lastMoveY)) return;
     dashCd=DASH_CD;
@@ -1388,41 +1571,35 @@
     dashDirY=lastMoveY;
   }
 
-  // Pause / restart
   function togglePause(){
     if(!started) return;
+    if(restartConfirmOpen || marketIsOpen()) return;
     running=!running;
     setPauseText();
     if(running){
       resumeMsgT=RESUME_MSG_DUR;
       openUpgradeIfNeeded();
-    }else{
+    } else {
       resumeMsgT=0;
     }
   }
-  function restartImmediate(){
-    if(!started) return;
-    resetGameState();
-    running=true;
-    setPauseText();
-  }
 
-  // Update main
+  // ========= Update =========
   function update(dtReal){
-    const timeScale = playerDead ? 0.10 : 1.0;
-    const dt = dtReal * timeScale;
+    const dt = dtReal * (playerDead ? 0.10 : 1.0);
 
     waveBannerT = Math.max(0, waveBannerT - dtReal);
-    resumeMsgT  = Math.max(0, resumeMsgT - dtReal);
-    cardLockT   = Math.max(0, cardLockT - dtReal);
-    dashCd      = Math.max(0, dashCd - dtReal);
+    resumeMsgT = Math.max(0, resumeMsgT - dtReal);
+    cardLockT = Math.max(0, cardLockT - dtReal);
+
+    dashCd = Math.max(0, dashCd - dtReal);
     if(dashT>0) dashT = Math.max(0, dashT - dtReal);
 
     if(playerDead){
       deathHoleT += dtReal;
     } else {
       timeAlive += dtReal;
-      score += dtReal * 5;
+      score += dtReal*5;
       comboT = Math.max(0, comboT - dtReal);
       if(comboT<=0) combo=0;
     }
@@ -1431,85 +1608,83 @@
     if(spawnTimer<=0){
       const current=wave;
       spawnBatch(current);
-      waveBannerText=`SEVİYE ${current}`;
-      waveBannerT=WAVE_BANNER_DUR;
+      waveBannerText = `SEVİYE ${current}`;
+      waveBannerT = WAVE_BANNER_DUR;
       wave++;
-      spawnTimer = Math.min(WAVE_MAX_INTERVAL, Math.max(WAVE_MIN_INTERVAL, 3.0 * 1.15 - wave*0.01));
+      spawnTimer = Math.min(WAVE_MAX_INTERVAL, Math.max(WAVE_MIN_INTERVAL, 3.0*1.15 - wave*0.01));
 
       if(playerDead){
         deathWavesRemaining--;
         if(deathWavesRemaining<=0){
           running=false;
           setPauseText();
-          if (startOverlay) startOverlay.style.display="flex";
+          startOverlay.style.display="flex";
           return;
         }
       }
     }
 
+    // enemy timers
     const enemies = enemyPool.getActive();
     for(const e of enemies){
-      if(!e) continue;
-      if(e.spawnImmuneT>0) e.spawnImmuneT = Math.max(0, e.spawnImmuneT - dt);
+      e.spawnImmuneT = Math.max(0, e.spawnImmuneT - dt);
+      if(e.kind==="boss"){
+        e.freezeLock = Math.max(0, e.freezeLock - dt);
+        e.freezeT = Math.max(0, e.freezeT - dt);
+        e.cd = Math.max(0, e.cd - dt);
+      }
     }
 
+    // fields
     for(let i=fields.length-1;i>=0;i--){
       const f=fields[i];
-      if (!f) continue;
       f.t -= dt;
       f.tickAcc += dt;
       if(f.t<=0){ fields.splice(i,1); continue; }
-
       while(f.tickAcc >= ELECTRIC_FIELD_TICK){
         f.tickAcc -= ELECTRIC_FIELD_TICK;
         const r2=f.r*f.r;
         for(let j=enemies.length-1;j>=0;j--){
           const e=enemies[j];
-          if(!e) continue;
-          if(dist2(f.x,f.y,e.x,e.y) <= r2){
+          if(dist2(f.x,f.y,e.x,e.y)<=r2){
             applyDamageAtIndex(e, f.dps, COL_ELEC, true);
           }
         }
       }
     }
 
+    // ring ticks
     if(!playerDead){
       ringTickAcc += dt;
       while(ringTickAcc >= RING_TICK){
         ringTickAcc -= RING_TICK;
-
         const fr=fireRingRadius(), er=elecRingRadius();
         const fr2=fr*fr, er2=er*er;
-        const fd=fireRingDamage();
-        const ed=elecRingDamage();
-
+        const fd=fireRingDamage(), ed=elecRingDamage();
         if((fd>0||ed>0) && enemies.length){
           for(let i=enemies.length-1;i>=0;i--){
             const e=enemies[i];
-            if(!e) continue;
             const d2=dist2(player.x,player.y,e.x,e.y);
             let dmg=0, col=null;
             if(fd>0 && d2<=fr2){ dmg+=fd; col=COL_FIRE; }
             if(ed>0 && d2<=er2){ dmg+=ed; col=COL_ELEC_RING; }
-            if(dmg>0) applyDamageAtIndex(e,dmg,col??COL_ELEC_RING,true);
+            if(dmg>0) applyDamageAtIndex(e,dmg,col||COL_ELEC_RING,true);
           }
         }
       }
     }
 
+    // movement input
     let mx=0,my=0;
     if(keys.has("w")||keys.has("arrowup")) my-=1;
     if(keys.has("s")||keys.has("arrowdown")) my+=1;
     if(keys.has("a")||keys.has("arrowleft")) mx-=1;
     if(keys.has("d")||keys.has("arrowright")) mx+=1;
 
-    // Mouse tutma kontrolü
     if(mousePressed){
-      const dx = mouseX - player.x;
-      const dy = mouseY - player.y;
-      const len = Math.hypot(dx, dy) || 1;
-      mx = dx / len;
-      my = dy / len;
+      const dx=mouseX-player.x, dy=mouseY-player.y;
+      const len=Math.hypot(dx,dy)||1;
+      mx=dx/len; my=dy/len;
     }
 
     if(mx||my){
@@ -1520,51 +1695,36 @@
 
     if(!playerDead){
       let sp=PLAYER_SPEED;
-      if(dashT>0){
-        sp=PLAYER_SPEED*DASH_MULT;
-        mx=dashDirX; my=dashDirY;
-      } else if(!(mx||my)){
-        mx=0; my=0;
-      }
+      if(dashT>0){ sp=PLAYER_SPEED*DASH_MULT; mx=dashDirX; my=dashDirY; }
       player.x += mx*sp*dt;
       player.y += my*sp*dt;
       softPushPlayer();
     }
 
+    // enemy movement
     for(const e of enemies){
-      if(!e) continue;
-
-      if(e.kind==="boss"){
-        e.freezeLock = Math.max(0, (e.freezeLock||0) - dt);
-        e.freezeT = Math.max(0, (e.freezeT||0) - dt);
-      }
-
-      if(e.kvx || e.kvy){
-        e.x += e.kvx*dt;
-        e.y += e.kvy*dt;
-        e.kvx *= Math.max(0, 1 - 8.5*dt);
-        e.kvy *= Math.max(0, 1 - 8.5*dt);
+      if(e.kvx||e.kvy){
+        e.x += e.kvx*dt; e.y += e.kvy*dt;
+        e.kvx *= Math.max(0, 1-8.5*dt);
+        e.kvy *= Math.max(0, 1-8.5*dt);
       }
 
       if(e.kind==="boss"){
         if(e.freezeT>0){
-          // frozen
+          // no move
+        } else if(e.state==="retreat"){
+          e.retreatT -= dt;
+          const vx=e.tx-e.x, vy=e.ty-e.y;
+          const l=Math.hypot(vx,vy)||1;
+          const sp=e.sp*1.25;
+          e.x += (vx/l)*sp*dt;
+          e.y += (vy/l)*sp*dt;
+          if(e.retreatT<=0 || (vx*vx+vy*vy)<18*18) e.state="chase";
         } else {
-          e.cd = Math.max(0, (e.cd||0) - dt);
-          if(e.state==="retreat"){
-            e.retreatT -= dt;
-            const vx=e.tx-e.x, vy=e.ty-e.y;
-            const l=Math.hypot(vx,vy)||1;
-            const sp=e.sp*1.25;
-            e.x += (vx/l)*sp*dt;
-            e.y += (vy/l)*sp*dt;
-            if(e.retreatT<=0 || (vx*vx+vy*vy)<18*18) e.state="chase";
-          } else {
-            const vx=player.x-e.x, vy=player.y-e.y;
-            const l=Math.hypot(vx,vy)||1;
-            e.x += (vx/l)*e.sp*dt;
-            e.y += (vy/l)*e.sp*dt;
-          }
+          const vx=player.x-e.x, vy=player.y-e.y;
+          const l=Math.hypot(vx,vy)||1;
+          e.x += (vx/l)*e.sp*dt;
+          e.y += (vy/l)*e.sp*dt;
         }
       } else {
         const vx=player.x-e.x, vy=player.y-e.y;
@@ -1580,14 +1740,15 @@
 
     if(!playerDead) enemyContactCheck(dt);
 
+    // drops magnet + pickup
     if(!playerDead){
       const mr=player.r*MAGNET_RANGE_MULT, mr2=mr*mr;
+      const drops=dropPool.getActive();
       for(let i=drops.length-1;i>=0;i--){
         const d=drops[i];
-        if (!d) continue;
         d.life-=dt;
-        let d2=dist2(player.x,player.y,d.x,d.y);
 
+        let d2=dist2(player.x,player.y,d.x,d.y);
         if(d2<=mr2){
           const dx=player.x-d.x, dy=player.y-d.y;
           const len=Math.hypot(dx,dy)||1;
@@ -1601,10 +1762,10 @@
 
         d2=dist2(player.x,player.y,d.x,d.y);
         const rr=player.r+d.r;
-
         if(d2<=rr*rr){
-          if(d.type==="health") player.hp=Math.min(player.hpMax, player.hp+12);
-          else if(d.type==="exp") gainExp(1);
+          if(d.type==="health") player.hp=Math.min(player.hpMax, player.hp+(d.amount||12));
+          else if(d.type==="exp") gainExp(d.amount||1);
+          else if(d.type==="gold") gainGold(d.amount||1);
           else if(d.type==="upgrade"){
             if(cardLockT<=0){
               points++;
@@ -1612,13 +1773,15 @@
               openUpgradeIfNeeded();
             }
           }
-          drops.splice(i,1);
+          dropPool.release(d);
           continue;
         }
-        if(d.life<=0) drops.splice(i,1);
+
+        if(d.life<=0) dropPool.release(d);
       }
     }
 
+    // shooting
     if(!playerDead){
       tBase -= dt;
       const bi = 1/(3 + skills.baseWeapon*0.18);
@@ -1641,27 +1804,26 @@
       sticksUpdate(dt);
     }
 
-    const bullets = bulletPool.getActive();
+    // bullets update + swept collision
+    const bullets=bulletPool.getActive();
     for(let i=bullets.length-1;i>=0;i--){
       const b=bullets[i];
-      if(!b) continue;
       b.life -= dt;
-      if(b.lastHitT>0) b.lastHitT = Math.max(0, b.lastHitT - dt);
+      b.lastHitT = Math.max(0, b.lastHitT - dt);
 
       addTrail(b.x,b.y,b.color,b.r*1.2);
 
+      const ox=b.x, oy=b.y;
       b.x += b.vx*dt;
       b.y += b.vy*dt;
 
       let didHit=false;
-      for(let j=0;j<enemies.length;j++){
-        const e=enemies[j];
-        if(!e) continue;
+      for(const e of enemies){
         const rr=b.r+e.r;
-        if(dist2(b.x,b.y,e.x,e.y)<=rr*rr){
-          const keep = bulletHitEnemy(b, e);
+        if(segCircleHit(ox,oy,b.x,b.y,e.x,e.y,rr)){
+          const keep = bulletHitEnemy(b,e);
           didHit=true;
-          if(!keep){ bulletPool.release(b); }
+          if(!keep) bulletPool.release(b);
           break;
         }
       }
@@ -1673,67 +1835,69 @@
       }
     }
 
-    for(let i=trails.length-1;i>=0;i--){ 
-      if (trails[i]) trails[i].life-=dt; 
-      if(trails[i] && trails[i].life<=0) trails.splice(i,1); 
+    // trails
+    for(const tr of trailPool.getActive()){
+      tr.life -= dt;
+      if(tr.life<=0) trailPool.release(tr);
     }
-    for(let i=particles.length-1;i>=0;i--){
-      const p=particles[i];
-      if (!p) continue;
-      p.life-=dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-      p.vx*= (1-1.8*dt); p.vy*=(1-1.8*dt);
-      if(p.life<=0) particles.splice(i,1);
+    // particles
+    for(const p of particlePool.getActive()){
+      p.life -= dt;
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      p.vx *= (1-1.8*dt); p.vy *= (1-1.8*dt);
+      if(p.life<=0) particlePool.release(p);
     }
-    for(let i=effects.length-1;i>=0;i--){ 
-      if (effects[i]) effects[i].life-=dt; 
-      if(effects[i] && effects[i].life<=0) effects.splice(i,1); 
+    // effects
+    for(const ef of effectPool.getActive()){
+      ef.life -= dt;
+      if(ef.life<=0) effectPool.release(ef);
     }
 
     openUpgradeIfNeeded();
   }
 
-  // Loop
+  // ========= Loop =========
   let last=performance.now();
   function loop(t){
     const dt=Math.min(0.033,(t-last)/1000);
     last=t;
-    try{
-      tickAutoPick(dt);
 
-      if(started && running && !pausedByUpgrade){
-        update(dt);
-      } else {
-        waveBannerT=Math.max(0,waveBannerT-dt);
-        resumeMsgT=Math.max(0,resumeMsgT-dt);
-        cardLockT=Math.max(0,cardLockT-dt);
-        dashCd=Math.max(0,dashCd-dt);
-        if(dashT>0) dashT=Math.max(0,dashT-dt);
-        if(playerDead) deathHoleT += dt;
-        if(!playerDead){
-          comboT=Math.max(0, comboT-dt);
-          if(comboT<=0) combo=0;
-        }
-      }
-      draw();
-    }catch(err){
-      console.error("Game error:", err);
-      running=false;
-      started=false;
-      if (startOverlay) startOverlay.style.display="flex";
+    tickAutoPick(dt);
+
+    if(started && running && !pausedByUpgrade && !restartConfirmOpen && !marketIsOpen()){
+      update(dt);
+    } else {
+      waveBannerT=Math.max(0,waveBannerT-dt);
+      resumeMsgT=Math.max(0,resumeMsgT-dt);
+      cardLockT=Math.max(0,cardLockT-dt);
+      dashCd=Math.max(0,dashCd-dt);
+      if(dashT>0) dashT=Math.max(0,dashT-dt);
     }
+
+    draw();
     requestAnimationFrame(loop);
   }
 
-  // Controls
+  // ========= Inputs =========
   window.addEventListener("keydown",(e)=>{
     const k=e.key.toLowerCase();
-    if(["arrowup","arrowdown","arrowleft","arrowright","p","r","1","2","3","4","enter"," ","shift"].includes(k)) e.preventDefault();
+
+    if(restartConfirmOpen){
+      if(["e","h","escape"].includes(k)) e.preventDefault();
+      if(k==="e") confirmRestartYes();
+      else if(k==="h" || k==="escape") confirmRestartNo();
+      return;
+    }
+
+    if(["arrowup","arrowdown","arrowleft","arrowright","p","r","m","1","2","3","4","enter"," ","shift"].includes(k)) e.preventDefault();
     keys.add(k);
 
     if(k==="p" || k===" ") togglePause();
-    if(k==="r") restartImmediate();
-    if(k==="enter" && !started){ startGame(); }
+    if(k==="m"){
+      if(started && !pausedByUpgrade && !playerDead && !gameOver) toggleMarket();
+    }
+    if(k==="r") openRestartConfirm();
+    if(k==="enter" && !started) startGame();
     if(k==="shift") tryDash();
 
     if(pausedByUpgrade){
@@ -1743,45 +1907,69 @@
       if(k==="4") applyUpgrade(3,false);
     }
   },{passive:false});
-  
+
   window.addEventListener("keyup",(e)=>keys.delete(e.key.toLowerCase()));
 
-  // Mouse controls
-  canvas.addEventListener("mousemove", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
+  canvas.addEventListener("mousemove",(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width;
+    const scaleY=canvas.height/rect.height;
+    mouseX=(e.clientX-rect.left)*scaleX;
+    mouseY=(e.clientY-rect.top)*scaleY;
   });
+  canvas.addEventListener("mousedown",()=>{ if(started && running && !pausedByUpgrade && !restartConfirmOpen && !marketIsOpen() && !playerDead) mousePressed=true; });
+  canvas.addEventListener("mouseup",()=>{ mousePressed=false; });
+  canvas.addEventListener("mouseleave",()=>{ mousePressed=false; });
 
-  canvas.addEventListener("mousedown", (e) => {
-    if(!started || !running || pausedByUpgrade || playerDead) return;
-    mousePressed = true;
-  });
+  pauseBtn.addEventListener("click", togglePause);
+  restartBtn.addEventListener("click", openRestartConfirm);
+  marketBtn.addEventListener("click", openMarket);
+  closeMarketBtn.addEventListener("click", closeMarket);
 
-  canvas.addEventListener("mouseup", (e) => {
-    mousePressed = false;
-  });
+  startBtn.addEventListener("click", startGame);
+  restartYesBtn.addEventListener("click", confirmRestartYes);
+  restartNoBtn.addEventListener("click", confirmRestartNo);
 
-  canvas.addEventListener("mouseleave", (e) => {
-    mousePressed = false;
-  });
+  function tryDash(){
+    if(!started || !running || pausedByUpgrade || restartConfirmOpen || marketIsOpen() || playerDead) return;
+    if(dashCd>0) return;
+    if(!(lastMoveX||lastMoveY)) return;
+    dashCd=DASH_CD;
+    dashT=DASH_DUR;
+    dashDirX=lastMoveX;
+    dashDirY=lastMoveY;
+  }
 
-  if (pauseBtn) pauseBtn.addEventListener("click", togglePause);
-  if (restartBtn) restartBtn.addEventListener("click", restartImmediate);
-  if (startBtn) startBtn.addEventListener("click", startGame);
-  if (rerollBtn) rerollBtn.addEventListener("click", doReroll);
+  function togglePause(){
+    if(!started) return;
+    if(restartConfirmOpen || marketIsOpen()) return;
+    running=!running;
+    setPauseText();
+    if(running){
+      resumeMsgT=RESUME_MSG_DUR;
+      openUpgradeIfNeeded();
+    } else {
+      resumeMsgT=0;
+    }
+  }
+
+  function getMarketCost(key){
+    const u = permanentUpgrades[key];
+    return Math.floor(u.baseCost * Math.pow(2, u.count));
+  }
 
   function startGame(){
     resetGameState();
     started=true;
     running=true;
-    if (startOverlay) startOverlay.style.display="none";
+    startOverlay.style.display="none";
     setPauseText();
   }
 
+  // init
   setPauseText();
   resetGameState();
-  if (startOverlay) startOverlay.style.display="flex";
+  startOverlay.style.display="flex";
   requestAnimationFrame(loop);
 
 })();
