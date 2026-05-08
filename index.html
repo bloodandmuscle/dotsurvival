@@ -7,7 +7,7 @@
   <script type="text/javascript" src="/ruxitagentjs_ICANVfqru_10335260306043831.js" data-dtconfig="rid=RID_284289620|rpid=429017643|domain=yaanimail.com|reportUrl=/rb_3f2c3bac-8f12-4c72-8ade-c9ccfa775b54|app=96376d6e64ad80dd|cuc=0opryidt|owasp=1|mel=100000|featureHash=ICANVfqru|dpvc=1|lastModification=1778154551522|tp=500,50,0|rdnt=1|uxrgce=1|srbbv=2|agentUri=/ruxitagentjs_ICANVfqru_10335260306043831.js"></script><style>
     html, body { height:100%; margin:0; background:#070b12; color:#e7eefc; font-family:system-ui, Arial; }
     .wrap { height:100%; display:grid; place-items:center; padding:10px; box-sizing:border-box; }
-    canvas { background:#0b1224; border:1px solid #22304f; border-radius:12px; width:98vw; max-width:98vw; height:auto; display:block; }
+    canvas { background:#0b1224; border:1px solid #22304f; border-radius:12px; width:98vw; max-width:98vw; height:auto; display:block; cursor:crosshair; }
 
     .hud { position:fixed; left:16px; top:12px; display:grid; gap:10px; font-size:14px; user-select:none; z-index:20; }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
@@ -85,7 +85,7 @@
     </div>
     <div class="small">
       Duraklat/Devam: <code>P</code> / <code>Space</code> | Dash: <code>Shift</code><br/>
-      Hareket: <code>WASD</code>/<code>Oklar</code> | Yükseltme: <code>1-4</code>
+      Hareket: <code>WASD</code>/<code>Oklar</code> | Yükseltme: <code>1-4</code> | Nişan: <code>Mouse</code>
     </div>
   </div>
 
@@ -98,7 +98,7 @@
       </div>
       <div class="note">
         <span>Enter: Başlat</span>
-        <span>Kart sadece boss’tan düşer.</span>
+        <span>Kart sadece boss'tan düşer.</span>
       </div>
     </div>
   </div>
@@ -119,30 +119,58 @@
 (() => {
   "use strict";
 
+  // ===== VALIDATION & ERROR HANDLING =====
+  function validateNumber(val, min, max, defaultVal) {
+    const n = Number(val);
+    if (isNaN(n)) return defaultVal;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function validateElement(id) {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`Element not found: ${id}`);
+      return null;
+    }
+    return el;
+  }
+
+  function safeCall(fn, fallback = null) {
+    try {
+      return fn();
+    } catch (err) {
+      console.error("Safe call error:", err);
+      return fallback;
+    }
+  }
+
   // DOM
-  const canvas = document.getElementById('c');
+  const canvas = validateElement('c');
+  if (!canvas) throw new Error("Canvas element not found");
+  
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error("2D context failed");
 
-  const hpText = document.getElementById('hpText');
-  const hpMaxText = document.getElementById('hpMaxText');
-  const hpBar = document.getElementById('hpBar');
-  const xpText = document.getElementById('xpText');
-  const xpBar = document.getElementById('xpBar');
-  const statText = document.getElementById('statText');
-  const buildText = document.getElementById('buildText');
+  const hpText = validateElement('hpText');
+  const hpMaxText = validateElement('hpMaxText');
+  const hpBar = validateElement('hpBar');
+  const xpText = validateElement('xpText');
+  const xpBar = validateElement('xpBar');
+  const statText = validateElement('statText');
+  const buildText = validateElement('buildText');
 
-  const pauseBtn = document.getElementById('pauseBtn');
-  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = validateElement('pauseBtn');
+  const restartBtn = validateElement('restartBtn');
 
-  const startOverlay = document.getElementById('startOverlay');
-  const startBtn = document.getElementById('startBtn');
+  const startOverlay = validateElement('startOverlay');
+  const startBtn = validateElement('startBtn');
 
-  const upgradeOverlay = document.getElementById('upgradeOverlay');
-  const optsEl = document.getElementById('opts');
-  const autoPickText = document.getElementById('autoPickText');
-  const rerollBtn = document.getElementById('rerollBtn');
+  const upgradeOverlay = validateElement('upgradeOverlay');
+  const optsEl = validateElement('opts');
+  const autoPickText = validateElement('autoPickText');
+  const rerollBtn = validateElement('rerollBtn');
 
-  const gameOverText = document.getElementById('gameOverText');
+  const gameOverText = validateElement('gameOverText');
 
   // Helpers
   const W = canvas.width, H = canvas.height;
@@ -157,8 +185,8 @@
   const BASE_MONSTER_HP = 2;
   const MAX_ENEMY_HP = 300;
 
-  const ENEMY_BASE_SPEED = 180 * 0.45;
-  const PLAYER_SPEED     = 180 * 1.5;
+  const ENEMY_BASE_SPEED = 180 * 0.45 * 0.90;
+  const PLAYER_SPEED = 180 * 1.5;
 
   const PLAYER_BASE_R = 14;
   const PLAYER_SCALE_PER_LVL = 0.10;
@@ -176,12 +204,13 @@
   const STICK_MAX_MULT = 2.0;
   const STICK_BASE_WIDTH = 6;
 
-  const WAVE_MAX_INTERVAL = 3.0;
+  const WAVE_MAX_INTERVAL = 3.0 * 1.15; // %15 arttırıldı
+  const WAVE_MIN_INTERVAL = 1.2 * 1.15; // %15 arttırıldı
 
   const DROP_R = 18;
   const HEALTH_DROP_R = DROP_R * 0.50;
-  const EXP_DROP_R    = DROP_R * 0.50;
-  const UPGRADE_DROP_R= DROP_R * 0.50;
+  const EXP_DROP_R = DROP_R * 0.50;
+  const UPGRADE_DROP_R = DROP_R * 0.50;
 
   const MAGNET_RANGE_MULT = 50;
   const MAGNET_STRENGTH = 1800 * 2;
@@ -189,47 +218,45 @@
 
   const BOSS_SIZE_MULT = 3.0;
   const GIANT_BOSS_MULT = 2.0;
-  const MEGA_BOSS_MULT  = 4.0;
+  const MEGA_BOSS_MULT = 4.0;
 
   const BOSS_HIT_DAMAGE = 1;
   const BOSS_HIT_COOLDOWN = 0.85;
   const BOSS_RETREAT_TIME = 0.9;
   const BOSS_RETREAT_DIST = 0.5 * Math.min(W, H) * 3.0;
 
-  // Boss freeze by explosion
   const BOSS_FREEZE_DUR = 0.50;
   const BOSS_FREEZE_LOCKOUT = 0.15;
 
   const WAVE_BANNER_DUR = 0.7;
   const RESUME_MSG_DUR = 0.7;
 
-  // Death hole: first 3s cover, then continue to 3x radius
   const DEATH_HOLE_COVER_DUR = 3.0;
   const DEATH_HOLE_EXTRA_DUR = 1.6;
 
   const DASH_DUR = 0.14;
-  const DASH_CD  = 1.0;
+  const DASH_CD = 1.0;
   const DASH_MULT = 3.1;
 
-  // Performance limits (lower)
   const MAX_PARTICLES = 650;
   const MAX_EFFECTS = 240;
   const MAX_TRAILS = 420;
-  const FX_MULT = 0.75; // reduce particle spawn
+  const FX_MULT = 0.75;
 
-  // Bullet behavior
-  const BULLET_LIFE = 6.0;          // can cross map
-  const BULLET_OOB = 800;           // allow flying off a bit
-  const BULLET_SAME_HIT_CD = 0.05;  // avoid multi-hit same frame
-  const ELECTRIC_FIELD_TICK = 1.0;  // damage per second
+  const BULLET_LIFE = 6.0;
+  const BULLET_OOB = 800;
+  const BULLET_SAME_HIT_CD = 0.05;
+  const ELECTRIC_FIELD_TICK = 1.0;
+
+  const SPAWN_PADDING = 140;
 
   // Colors
   const COL_PLAYER = "rgba(59,130,246,0.95)";
-  const COL_BASE   = "rgba(34,197,94,0.95)";
-  const COL_FIRE   = "rgba(239,68,68,0.95)";
-  const COL_ELEC   = "rgba(59,130,246,0.95)";
+  const COL_BASE = "rgba(34,197,94,0.95)";
+  const COL_FIRE = "rgba(239,68,68,0.95)";
+  const COL_ELEC = "rgba(59,130,246,0.95)";
   const COL_ELEC_RING = "rgba(34,211,238,0.95)";
-  const COL_EXPLODE   = "rgba(251,146,60,0.95)";
+  const COL_EXPLODE = "rgba(251,146,60,0.95)";
 
   const BG_CYCLE = [
     { bg:"#0b1224", line:"#3b4a76" },
@@ -257,8 +284,81 @@
   }
   const expNeed = lvl => nthPrime(lvl);
 
+  // ===== OBJECT POOLING =====
+  class ObjectPool {
+    constructor(factory, resetFn, initialSize = 100) {
+      this.factory = factory;
+      this.resetFn = resetFn;
+      this.available = [];
+      this.active = [];
+      for (let i = 0; i < initialSize; i++) {
+        this.available.push(factory());
+      }
+    }
+
+    get() {
+      let obj;
+      if (this.available.length > 0) {
+        obj = this.available.pop();
+      } else {
+        obj = this.factory();
+      }
+      this.active.push(obj);
+      return obj;
+    }
+
+    release(obj) {
+      if (!obj) return;
+      const idx = this.active.indexOf(obj);
+      if (idx !== -1) {
+        this.active.splice(idx, 1);
+        this.resetFn(obj);
+        this.available.push(obj);
+      }
+    }
+
+    releaseAll() {
+      while (this.active.length > 0) {
+        const obj = this.active.pop();
+        if (obj) {
+          this.resetFn(obj);
+          this.available.push(obj);
+        }
+      }
+    }
+
+    getActive() {
+      return this.active;
+    }
+
+    clear() {
+      this.available = [];
+      this.active = [];
+    }
+  }
+
+  // Enemy pool
+  const enemyPool = new ObjectPool(
+    () => ({ uid: 0, kind: "", x: 0, y: 0, r: 0, sp: 0, dmg: 0, hp: 0, hpMax: 0, kvx: 0, kvy: 0, spawnImmuneT: 0, bossType: "", donut: false, state: "", cd: 0, retreatT: 0, tx: 0, ty: 0, freezeT: 0, freezeLock: 0 }),
+    (obj) => {
+      obj.uid = 0; obj.kind = ""; obj.x = 0; obj.y = 0; obj.r = 0; obj.sp = 0; obj.dmg = 0; obj.hp = 0; obj.hpMax = 0;
+      obj.kvx = 0; obj.kvy = 0; obj.spawnImmuneT = 0; obj.bossType = ""; obj.donut = false; obj.state = "";
+      obj.cd = 0; obj.retreatT = 0; obj.tx = 0; obj.ty = 0; obj.freezeT = 0; obj.freezeLock = 0;
+    },
+    150
+  );
+
+  // Bullet pool
+  const bulletPool = new ObjectPool(
+    () => ({ kind: "", x: 0, y: 0, vx: 0, vy: 0, r: 0, life: 0, color: "", pierce: 0, dmg: 0, lastHitUid: 0, lastHitT: 0, ricochetN: 0, ricochetUsed: false }),
+    (obj) => {
+      obj.kind = ""; obj.x = 0; obj.y = 0; obj.vx = 0; obj.vy = 0; obj.r = 0; obj.life = 0; obj.color = "";
+      obj.pierce = 0; obj.dmg = 0; obj.lastHitUid = 0; obj.lastHitT = 0; obj.ricochetN = 0; obj.ricochetUsed = false;
+    },
+    200
+  );
+
   // State
-  let enemies=[], bullets=[], drops=[], particles=[], trails=[], effects=[], fields=[];
   let running=false, started=false, pausedByUpgrade=false;
 
   let gameOver=false;
@@ -284,6 +384,9 @@
   let lastMoveX=0, lastMoveY=0;
   let dashDirX=0, dashDirY=0;
 
+  let mouseX = W*0.5, mouseY = H*0.5;
+  let mousePressed = false;
+
   const keys=new Set();
 
   const player={ x:W*0.5, y:H*0.5, r:PLAYER_BASE_R, hp:100, hpMax:100 };
@@ -297,8 +400,12 @@
   let tBase=0, tFire=0, tElec=0, stickAngle=0, ringTickAcc=0;
   let uidGen=1;
 
+  // Arrays for non-pooled objects
+  let drops=[], particles=[], trails=[], effects=[], fields=[];
+
   // Visual helpers
   function pushLimited(arr, item, max){
+    if (!arr || !item) return;
     arr.push(item);
     if(arr.length>max) arr.splice(0, arr.length-max);
   }
@@ -319,7 +426,9 @@
   }
 
   // UI helpers
-  function setPauseText(){ pauseBtn.textContent = running ? "Duraklat" : "Devam"; }
+  function setPauseText(){ 
+    if (pauseBtn) pauseBtn.textContent = running ? "Duraklat" : "Devam"; 
+  }
   function nowLevel(){ return Math.max(1, wave-1); }
   function skillLevelCap(){ return Math.max(1, Math.floor(nowLevel()/5)); }
 
@@ -330,7 +439,9 @@
 
   // Resets
   function resetGameState(){
-    enemies=[]; bullets=[]; drops=[]; particles=[]; trails=[]; effects=[]; fields=[];
+    enemyPool.releaseAll();
+    bulletPool.releaseAll();
+    drops=[]; particles=[]; trails=[]; effects=[]; fields=[];
     kills=0; exp=0; expLevel=1; points=0;
     wave=1; spawnTimer=0;
     waveBannerT=0; waveBannerText="";
@@ -339,13 +450,14 @@
     timeAlive=0; score=0;
     combo=0; comboT=0; comboBest=0;
     dashT=0; dashCd=0; lastMoveX=0; lastMoveY=0;
+    mousePressed=false;
     uidGen=1;
 
     gameOver=false;
     playerDead=false;
     deathWavesRemaining=0;
     deathHoleT=0;
-    gameOverText.style.display="none";
+    if (gameOverText) gameOverText.style.display="none";
 
     player.x=W*0.5; player.y=H*0.5;
     player.hpMax=100; player.hp=100;
@@ -358,13 +470,14 @@
 
     upgradeOptions=[]; autoPick=0; upgradeScreen=0; rerollUsed=false;
     pausedByUpgrade=false;
-    upgradeOverlay.style.display="none";
+    if (upgradeOverlay) upgradeOverlay.style.display="none";
 
     applyPlayerLevelScaling();
   }
 
   // Progression
   function gainExp(n){
+    n = validateNumber(n, 0, 1000, 1);
     exp += n;
     while(exp >= expNeed(expLevel)){
       exp -= expNeed(expLevel);
@@ -387,11 +500,11 @@
   function enemyDmg(w){ return 10 + w*0.7; }
 
   function randEdge(){
-    const pad=24, side=(Math.random()*4)|0;
-    if(side===0) return {x:-pad,y:Math.random()*H};
-    if(side===1) return {x:W+pad,y:Math.random()*H};
-    if(side===2) return {x:Math.random()*W,y:-pad};
-    return {x:Math.random()*W,y:H+pad};
+    const side=(Math.random()*4)|0;
+    if(side===0) return {x:-SPAWN_PADDING,y:Math.random()*H};
+    if(side===1) return {x:W+SPAWN_PADDING,y:Math.random()*H};
+    if(side===2) return {x:Math.random()*W,y:-SPAWN_PADDING};
+    return {x:Math.random()*W,y:H+SPAWN_PADDING};
   }
 
   function spawnNormalAt(x,y,w,type="normal", spawnImmuneT=0){
@@ -402,7 +515,17 @@
     if(type==="fast"){ kind="fast"; hp=clampHP(hp*0.5); sp*=1.8; r=10; }
     if(type==="tank"){ kind="tank"; hp=clampHP(hp*3.0); sp*=1/3; r=14; }
 
-    enemies.push({ uid:uidGen++, kind, x,y,r, sp, dmg:enemyDmg(w), hp, hpMax:hp, kvx:0, kvy:0, spawnImmuneT });
+    const e = enemyPool.get();
+    if (!e) return;
+    e.uid=uidGen++;
+    e.kind=kind;
+    e.x=x; e.y=y; e.r=r;
+    e.sp=sp;
+    e.dmg=enemyDmg(w);
+    e.hp=hp;
+    e.hpMax=hp;
+    e.kvx=0; e.kvy=0;
+    e.spawnImmuneT=spawnImmuneT;
   }
 
   function spawnBossAt(x,y,w,bossType="boss"){
@@ -410,26 +533,39 @@
     let sizeMult=BOSS_SIZE_MULT;
     let hpMult=10;
     let donut=false;
-    if(bossType==="giant"){ sizeMult*=GIANT_BOSS_MULT; hpMult*=2.2; }
-    if(bossType==="mega"){ sizeMult*=MEGA_BOSS_MULT; hpMult*=6.5; donut=true; }
+    if(bossType==="giant"){ sizeMult*=GIANT_BOSS_MULT; hpMult*=2.0; }
+    if(bossType==="mega"){ sizeMult*=MEGA_BOSS_MULT; hpMult*=2.0; donut=true; }
 
     const hp=clampHP(hpMult*mul);
-    enemies.push({
-      uid:uidGen++,
-      kind:"boss", bossType, donut,
-      x,y, r:11*sizeMult, sp:enemySpeed(), dmg:enemyDmg(w)*2.0,
-      hp, hpMax:hp,
-      state:"chase", cd:0, retreatT:0, tx:x, ty:y,
-      kvx:0, kvy:0,
-      freezeT:0, freezeLock:0
-    });
+    const e = enemyPool.get();
+    if (!e) return;
+    e.uid=uidGen++;
+    e.kind="boss";
+    e.bossType=bossType;
+    e.donut=donut;
+    e.x=x; e.y=y;
+    e.r=11*sizeMult;
+    e.sp=enemySpeed();
+    e.dmg=enemyDmg(w)*2.0;
+    e.hp=hp;
+    e.hpMax=hp;
+    e.state="chase";
+    e.cd=0;
+    e.retreatT=0;
+    e.tx=x; e.ty=y;
+    e.kvx=0; e.kvy=0;
+    e.freezeT=0;
+    e.freezeLock=0;
   }
 
   function spawnBossDeathMinions(x,y,w){
-    // 10 new monsters, immune to explosion for 0.1s
-    for(let i=0;i<10;i++){
-      const a=(i/10)*Math.PI*2;
-      const rr=90+Math.random()*40;
+    const count = 10;
+    const baseDist = 90;
+    const extraDist = 40;
+    const minion2xDist = 2.0;
+    for(let i=0;i<count;i++){
+      const a=(i/count)*Math.PI*2;
+      const rr=(baseDist+Math.random()*extraDist)*minion2xDist;
       spawnNormalAt(x+Math.cos(a)*rr, y+Math.sin(a)*rr, w, "normal", 0.10);
     }
   }
@@ -485,7 +621,7 @@
   }
 
   function tryFreezeBoss(e){
-    if(e.kind!=="boss") return;
+    if(!e || e.kind!=="boss") return;
     if(e.freezeT>0) return;
     if(e.freezeLock>0) return;
     e.freezeT=BOSS_FREEZE_DUR;
@@ -493,7 +629,7 @@
   }
 
   function applyExplosionEffect(e){
-    if(e.spawnImmuneT>0) return; // immunity for fresh spawns
+    if(!e || e.spawnImmuneT>0) return;
     if(e.kind==="boss"){ tryFreezeBoss(e); return; }
     let dx=e.x-player.x, dy=e.y-player.y;
     const len=Math.hypot(dx,dy)||1;
@@ -510,12 +646,14 @@
     let guard=0;
     while(q.length && guard++<220){
       const it=q.shift();
+      if (!it) continue;
       const ex=it.x, ey=it.y, baseR=it.r;
       const rad=Math.max(40, baseR*10);
       const r2=rad*rad;
 
       explosionFx(ex,ey,COL_EXPLODE,rad);
 
+      const enemies = enemyPool.getActive();
       for(let i=enemies.length-1;i>=0;i--){
         const e=enemies[i];
         if(!e) continue;
@@ -528,7 +666,7 @@
             const x=e.x,y=e.y,r=e.r;
 
             dropLoot(x,y,wasBoss);
-            enemies.splice(i,1);
+            enemyPool.release(e);
             killAward();
 
             if(wasBoss) spawnBossDeathMinions(x,y,wave);
@@ -540,8 +678,7 @@
     }
   }
 
-  function applyDamageAtIndex(i, dmg, color, allowExplode){
-    const e=enemies[i];
+  function applyDamageAtIndex(e, dmg, color, allowExplode){
     if(!e) return;
 
     e.hp -= dmg;
@@ -552,7 +689,7 @@
       const x=e.x,y=e.y,r=e.r;
 
       dropLoot(x,y,wasBoss);
-      enemies.splice(i,1);
+      enemyPool.release(e);
       killAward();
 
       if(wasBoss) spawnBossDeathMinions(x,y,wave);
@@ -564,6 +701,7 @@
   // Targeting helpers for ricochet
   function nearestEnemiesFrom(x,y, count, excludeUid){
     const arr=[];
+    const enemies = enemyPool.getActive();
     for(const e of enemies){
       if(!e) continue;
       if(excludeUid && e.uid===excludeUid) continue;
@@ -575,13 +713,34 @@
   }
 
   // Shooting: improved projectile counts
-  function shotsPerLevel(lv){ return Math.max(0, lv); } // each level +1 (plus base 1 elsewhere)
+  function shotsPerLevel(lv){ 
+    return Math.max(0, lv + Math.floor(lv/3));
+  }
+
+  function createBullet(kind, x, y, vx, vy, r, color, pierce, dmg, ricochetN = 0) {
+    const b = bulletPool.get();
+    if (!b) return;
+    b.kind = kind;
+    b.x = x;
+    b.y = y;
+    b.vx = vx;
+    b.vy = vy;
+    b.r = r;
+    b.life = BULLET_LIFE;
+    b.color = color;
+    b.pierce = pierce;
+    b.dmg = dmg;
+    b.lastHitUid = 0;
+    b.lastHitT = 0;
+    b.ricochetN = ricochetN;
+    b.ricochetUsed = false;
+  }
 
   function shootBase(){
     const lv = skills.baseWeapon;
     const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv);          // at least 1 => hits 2 targets
-    const dmg = 1;                            // you can scale if desired
+    const pierce = Math.max(1, lv);
+    const dmg = 1;
     const speed = 780;
     const radius = 4.8;
     const idxs = nearestEnemiesFrom(player.x, player.y, 1, 0);
@@ -593,18 +752,7 @@
     for(let n=0;n<count;n++){
       const t=(count===1)?0:(n/(count-1)-0.5);
       const a=ang0+t*spread;
-      bullets.push({
-        kind:"base",
-        x:player.x,y:player.y,
-        vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
-        r:radius,
-        life:BULLET_LIFE,
-        color:COL_BASE,
-        pierce,
-        dmg,
-        lastHitUid:0,
-        lastHitT:0
-      });
+      createBullet("base", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_BASE, pierce, dmg);
     }
   }
 
@@ -612,7 +760,7 @@
     const lv = skills.fireball;
     if(lv<=0) return;
     const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv); // pierce too
+    const pierce = Math.max(1, lv);
     const dmg = 1;
     const speed = 690;
     const radius = 6.2;
@@ -623,26 +771,12 @@
     const ang0=Math.atan2(target.y-player.y,target.x-player.x);
     const spread=0.22 + Math.min(0.34,(count-1)*0.05);
 
-    // how many ricochets to spawn on FIRST hit
     const ricochetN = Math.floor(lv/2)+2;
 
     for(let n=0;n<count;n++){
       const t=(count===1)?0:(n/(count-1)-0.5);
       const a=ang0+t*spread;
-      bullets.push({
-        kind:"fire",
-        x:player.x,y:player.y,
-        vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
-        r:radius,
-        life:BULLET_LIFE,
-        color:COL_FIRE,
-        pierce,
-        dmg,
-        ricochetN,
-        ricochetUsed:false,
-        lastHitUid:0,
-        lastHitT:0
-      });
+      createBullet("fire", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_FIRE, pierce, dmg, ricochetN);
     }
   }
 
@@ -650,7 +784,7 @@
     const lv = skills.electricBall;
     if(lv<=0) return;
     const count = 1 + shotsPerLevel(lv);
-    const pierce = Math.max(1, lv); // bullet doesn't vanish on first hit
+    const pierce = Math.max(1, lv);
     const dmg = 1;
     const speed = 705;
     const radius = 6.0;
@@ -664,25 +798,14 @@
     for(let n=0;n<count;n++){
       const t=(count===1)?0:(n/(count-1)-0.5);
       const a=ang0+t*spread;
-      bullets.push({
-        kind:"elec",
-        x:player.x,y:player.y,
-        vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
-        r:radius,
-        life:BULLET_LIFE,
-        color:COL_ELEC,
-        pierce,
-        dmg,
-        lastHitUid:0,
-        lastHitT:0
-      });
+      createBullet("elec", player.x, player.y, Math.cos(a)*speed, Math.sin(a)*speed, radius, COL_ELEC, pierce, dmg);
     }
   }
 
   function spawnElectricField(x,y, lv){
-    const dur = (lv/3) + 2; // requested
+    const dur = (lv/3) + 2;
     const radius = player.r * 3.0;
-    const dps = 1 + Math.floor(lv/3); // per second
+    const dps = 1 + Math.floor(lv/3);
     fields.push({x,y,r:radius, t:dur, tickAcc:0, dps});
     if(fields.length>80) fields.splice(0, fields.length-80);
   }
@@ -690,22 +813,15 @@
   function doFireRicochet(fromX, fromY, excludeUid, n){
     const targets = nearestEnemiesFrom(fromX, fromY, n, excludeUid);
     for(const t of targets){
+      if (!t) continue;
       const ang=Math.atan2(t.y-fromY, t.x-fromX);
       const speed=720;
-      bullets.push({
-        kind:"fire",
-        x:fromX,y:fromY,
-        vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
-        r:5.4,
-        life:BULLET_LIFE,
-        color:COL_FIRE,
-        pierce:1,
-        dmg:1,
-        ricochetN:0,
-        ricochetUsed:true,
-        lastHitUid:0,
-        lastHitT:0
-      });
+      createBullet("fire", fromX, fromY, Math.cos(ang)*speed, Math.sin(ang)*speed, 5.4, COL_FIRE, 1, 1, 0);
+      const bullets = bulletPool.getActive();
+      if(bullets.length > 0) {
+        const lastBullet = bullets[bullets.length - 1];
+        if (lastBullet) lastBullet.ricochetUsed = true;
+      }
     }
   }
 
@@ -734,6 +850,7 @@
     if(c<=0) return;
     stickAngle += dt*stickSpd();
 
+    const enemies = enemyPool.getActive();
     for(let s=0;s<c;s++){
       const off=(Math.PI*2)*(s/c);
       const a=stickAngle+off;
@@ -748,18 +865,31 @@
       for(let i=enemies.length-1;i>=0;i--){
         const e=enemies[i];
         if(!e) continue;
-        if(distSeg2(e.x,e.y,ax,ay,bx,by)<=w2) applyDamageAtIndex(i,HIT_DAMAGE,COL_ELEC_RING,true);
+        if(distSeg2(e.x,e.y,ax,ay,bx,by)<=w2) applyDamageAtIndex(e,HIT_DAMAGE,COL_ELEC_RING,true);
       }
     }
   }
 
   // Rings
-  function ringTickDmg(lv){ return lv<=0?0:(1+Math.floor((lv-1)/3)); }
+  function ringTickDmg(lv){ 
+    return lv<=0?0:(1+Math.floor((lv-1)/3)); 
+  }
   function fireRingRadius(){ return skills.fireRing<=0?0:(RING_BASE + skills.fireRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
   function elecRingRadius(){ return skills.electricRing<=0?0:(RING_BASE + skills.electricRing*RING_SKILL_ADD + expLevel*RING_LEVEL_ADD); }
 
+  function fireRingDamage() {
+    const baseDmg = ringTickDmg(skills.fireRing);
+    return baseDmg * 1.5;
+  }
+
+  function elecRingDamage() {
+    const baseDmg = ringTickDmg(skills.electricRing);
+    return baseDmg * 1.5;
+  }
+
   // Retreat
   function setBossRetreat(e){
+    if(!e) return;
     const dx=e.x-player.x, dy=e.y-player.y;
     const len=Math.hypot(dx,dy)||1;
     const nx=dx/len, ny=dy/len;
@@ -793,7 +923,7 @@
     playerDead=true;
     deathWavesRemaining=3;
     deathHoleT=0;
-    gameOverText.style.display="block";
+    if (gameOverText) gameOverText.style.display="block";
     explosionFx(player.x,player.y,"rgba(255,255,255,0.95)",340);
     for(let i=0;i<7;i++){
       const a=(i/7)*Math.PI*2;
@@ -811,7 +941,7 @@
   }
   function available(id){ return capOk(id) && !banned(id); }
   function randPick(arr){ return arr[(Math.random()*arr.length)|0]; }
-  function weight(id){ return skills[id]===0?1:3; }
+  function weight(id){ return skills[id]===0?3:1; } // Minimum yeteneklere daha fazla ağırlık
 
   function chooseUpgradeOptions(){
     const ids=Object.keys(skills).filter(available);
@@ -825,6 +955,7 @@
 
     if(maxPool.length) chosen.add(randPick(maxPool));
     if(minPool.length && chosen.size<4) chosen.add(randPick(minPool));
+    if(minPool.length && chosen.size<4) chosen.add(randPick(minPool)); // +1 minimum yetenek
 
     while(chosen.size<4){
       const pool=ids.filter(id=>!chosen.has(id));
@@ -851,6 +982,7 @@
   }
 
   function renderUpgradeOptions(){
+    if (!optsEl) return;
     optsEl.innerHTML="";
     const cap=skillLevelCap();
     upgradeOptions.forEach((id,idx)=>{
@@ -873,7 +1005,7 @@
     if(opts.length===0) return;
 
     pausedByUpgrade=true;
-    upgradeOverlay.style.display="flex";
+    if (upgradeOverlay) upgradeOverlay.style.display="flex";
     upgradeScreen++;
 
     upgradeOptions=opts;
@@ -881,13 +1013,13 @@
 
     renderUpgradeOptions();
     autoPick=10.0;
-    autoPickText.textContent="10";
+    if (autoPickText) autoPickText.textContent="10";
 
-    rerollBtn.style.display = (upgradeScreen%5===0) ? "inline-block" : "none";
+    if (rerollBtn) rerollBtn.style.display = (upgradeScreen%5===0) ? "inline-block" : "none";
   }
 
   function closeUpgrade(){
-    upgradeOverlay.style.display="none";
+    if (upgradeOverlay) upgradeOverlay.style.display="none";
     pausedByUpgrade=false;
     if(points>0) openUpgradeIfNeeded();
   }
@@ -913,7 +1045,7 @@
   function tickAutoPick(dt){
     if(!pausedByUpgrade || !running || gameOver || playerDead) return;
     autoPick -= dt;
-    autoPickText.textContent = String(Math.max(0, Math.ceil(autoPick)));
+    if (autoPickText) autoPickText.textContent = String(Math.max(0, Math.ceil(autoPick)));
     if(autoPick<=0){
       const r=(Math.random()*upgradeOptions.length)|0;
       applyUpgrade(r,true);
@@ -929,8 +1061,8 @@
     upgradeOptions=opts;
     renderUpgradeOptions();
     autoPick=10.0;
-    autoPickText.textContent="10";
-    rerollBtn.style.display="none";
+    if (autoPickText) autoPickText.textContent="10";
+    if (rerollBtn) rerollBtn.style.display="none";
   }
 
   // Build
@@ -997,7 +1129,6 @@
     const r=Math.max(10,player.r);
     const baseInner=r*0.375;
 
-    // hole growth: cover in 3s, then continue to 3x
     const t=deathHoleT;
     let inner=baseInner;
 
@@ -1007,7 +1138,7 @@
 
       if(t > DEATH_HOLE_COVER_DUR){
         const extraT = clamp((t-DEATH_HOLE_COVER_DUR)/DEATH_HOLE_EXTRA_DUR,0,1);
-        inner = r + (3*r - r)*extraT; // up to 3x
+        inner = r + (3*r - r)*extraT;
       }
     }
 
@@ -1015,7 +1146,6 @@
     ctx.fillStyle=COL_PLAYER;
     ctx.beginPath(); ctx.arc(player.x,player.y,r,0,Math.PI*2); ctx.fill();
 
-    // blackness
     ctx.fillStyle="rgba(0,0,0,0.92)";
     ctx.beginPath(); ctx.arc(player.x,player.y,inner,0,Math.PI*2); ctx.fill();
 
@@ -1049,7 +1179,6 @@
     const levelNow=nowLevel();
     drawBackground(levelNow);
 
-    // ring previews
     const fr=fireRingRadius();
     if(fr>0){
       ctx.save();
@@ -1071,7 +1200,6 @@
       ctx.restore();
     }
 
-    // electric fields (visual)
     for(const f of fields){
       ctx.save();
       const a = clamp(f.t/2.0,0,1);
@@ -1085,7 +1213,7 @@
       ctx.restore();
     }
 
-    // enemies
+    const enemies = enemyPool.getActive();
     for(const e of enemies){
       if(!e) continue;
       ctx.save();
@@ -1105,7 +1233,6 @@
       if(e.kind==="boss") drawBossHpText(e);
     }
 
-    // drops
     for(const d of drops){
       ctx.save();
       if(d.type==="health") ctx.fillStyle="rgba(34,197,94,0.95)";
@@ -1117,7 +1244,6 @@
       ctx.restore();
     }
 
-    // trails
     for(const tr of trails){
       const a=Math.max(0,tr.life/tr.max);
       ctx.save();
@@ -1127,7 +1253,6 @@
       ctx.restore();
     }
 
-    // effects
     for(const ef of effects){
       const a=Math.max(0,ef.life/ef.max);
       ctx.save();
@@ -1148,7 +1273,7 @@
       ctx.restore();
     }
 
-    // bullets
+    const bullets = bulletPool.getActive();
     for(const b of bullets){
       ctx.save();
       ctx.fillStyle=b.color;
@@ -1158,7 +1283,6 @@
       ctx.restore();
     }
 
-    // particles
     for(const p of particles){
       const a=Math.max(0,p.life/p.max);
       ctx.save();
@@ -1182,64 +1306,54 @@
       drawCenteredText("DEVAM","",a);
     }
 
-    // HUD
     const need=expNeed(expLevel);
-    hpText.textContent=String(Math.ceil(player.hp));
-    hpMaxText.textContent=String(player.hpMax);
-    hpBar.style.width=`${clamp((player.hp/player.hpMax)*100,0,100)}%`;
-    xpText.textContent=`${Math.floor(exp)}/${need}`;
-    xpBar.style.width=`${clamp((exp/need)*100,0,100)}%`;
+    if (hpText) hpText.textContent=String(Math.ceil(player.hp));
+    if (hpMaxText) hpMaxText.textContent=String(player.hpMax);
+    if (hpBar) hpBar.style.width=`${clamp((player.hp/player.hpMax)*100,0,100)}%`;
+    if (xpText) xpText.textContent=`${Math.floor(exp)}/${need}`;
+    if (xpBar) xpBar.style.width=`${clamp((exp/need)*100,0,100)}%`;
 
-    statText.textContent =
+    if (statText) statText.textContent =
       `Seviye:${levelNow} | Süre:${timeAlive.toFixed(1)}s | Skor:${Math.floor(score)} | Combo:${combo} (Best ${comboBest}) | Kart kilidi:${cardLockT.toFixed(1)}s`;
 
-    buildText.textContent =
+    if (buildText) buildText.textContent =
       `Build: ${buildTop3()} | Skill cap: ${skillLevelCap()} | Düşman:${enemies.length} | Mermi:${bullets.length} | Field:${fields.length}`;
   }
 
   // Mechanics: collision helper
-  function bulletHitEnemy(b, i){
-    const e=enemies[i];
-    if(!e) return false;
+  function bulletHitEnemy(b, e){
+    if(!b || !e) return false;
 
-    // avoid repeated instant hits on same enemy
     if(b.lastHitT>0 && b.lastHitUid===e.uid) return false;
 
-    // apply damage
-    applyDamageAtIndex(i, b.dmg || 1, b.color, true);
+    applyDamageAtIndex(e, b.dmg || 1, b.color, true);
 
-    // special behaviors
     if(b.kind==="elec"){
-      // electric field at hit location
       const lv = skills.electricBall;
       spawnElectricField(e.x, e.y, lv);
     } else if(b.kind==="fire"){
-      // spawn ricochets once per bullet (controlled)
       if(!b.ricochetUsed && b.ricochetN>0){
         b.ricochetUsed = true;
         doFireRicochet(e.x, e.y, e.uid, b.ricochetN);
       }
     }
 
-    // mark last hit
     b.lastHitUid = e.uid;
     b.lastHitT = BULLET_SAME_HIT_CD;
 
-    // pierce handling
     if(b.pierce>0){
       b.pierce--;
-      // nudge bullet forward so it doesn't re-hit same enemy immediately
       b.x += b.vx * 0.01;
       b.y += b.vy * 0.01;
-      return true; // bullet stays
+      return true;
     }else{
-      // remove bullet
       return false;
     }
   }
 
   // Update: enemy contact
   function enemyContactCheck(dt){
+    const enemies = enemyPool.getActive();
     for(let i=enemies.length-1;i>=0;i--){
       const e=enemies[i];
       if(!e) continue;
@@ -1256,7 +1370,7 @@
           player.hp -= e.dmg*(1-0.05);
           hitBurst(player.x,player.y,"rgba(96,165,250,0.9)",12);
           dropLoot(e.x,e.y,false);
-          enemies.splice(i,1);
+          enemyPool.release(e);
         }
         if(player.hp<=0){ handlePlayerDeath(); return; }
       }
@@ -1298,7 +1412,6 @@
     const timeScale = playerDead ? 0.10 : 1.0;
     const dt = dtReal * timeScale;
 
-    // timers
     waveBannerT = Math.max(0, waveBannerT - dtReal);
     resumeMsgT  = Math.max(0, resumeMsgT - dtReal);
     cardLockT   = Math.max(0, cardLockT - dtReal);
@@ -1314,7 +1427,6 @@
       if(comboT<=0) combo=0;
     }
 
-    // spawn
     spawnTimer -= dt;
     if(spawnTimer<=0){
       const current=wave;
@@ -1322,29 +1434,28 @@
       waveBannerText=`SEVİYE ${current}`;
       waveBannerT=WAVE_BANNER_DUR;
       wave++;
-      spawnTimer = Math.min(WAVE_MAX_INTERVAL, Math.max(1.2, 3.0 - wave*0.01));
+      spawnTimer = Math.min(WAVE_MAX_INTERVAL, Math.max(WAVE_MIN_INTERVAL, 3.0 * 1.15 - wave*0.01));
 
       if(playerDead){
         deathWavesRemaining--;
         if(deathWavesRemaining<=0){
           running=false;
           setPauseText();
-          // show start overlay again
-          startOverlay.style.display="flex";
+          if (startOverlay) startOverlay.style.display="flex";
           return;
         }
       }
     }
 
-    // spawn immunity timer
+    const enemies = enemyPool.getActive();
     for(const e of enemies){
       if(!e) continue;
       if(e.spawnImmuneT>0) e.spawnImmuneT = Math.max(0, e.spawnImmuneT - dt);
     }
 
-    // fields tick
     for(let i=fields.length-1;i>=0;i--){
       const f=fields[i];
+      if (!f) continue;
       f.t -= dt;
       f.tickAcc += dt;
       if(f.t<=0){ fields.splice(i,1); continue; }
@@ -1356,14 +1467,12 @@
           const e=enemies[j];
           if(!e) continue;
           if(dist2(f.x,f.y,e.x,e.y) <= r2){
-            // damage per second
-            applyDamageAtIndex(j, f.dps, COL_ELEC, true);
+            applyDamageAtIndex(e, f.dps, COL_ELEC, true);
           }
         }
       }
     }
 
-    // ring DoT
     if(!playerDead){
       ringTickAcc += dt;
       while(ringTickAcc >= RING_TICK){
@@ -1371,8 +1480,8 @@
 
         const fr=fireRingRadius(), er=elecRingRadius();
         const fr2=fr*fr, er2=er*er;
-        const fd=ringTickDmg(skills.fireRing);
-        const ed=ringTickDmg(skills.electricRing);
+        const fd=fireRingDamage();
+        const ed=elecRingDamage();
 
         if((fd>0||ed>0) && enemies.length){
           for(let i=enemies.length-1;i>=0;i--){
@@ -1382,18 +1491,26 @@
             let dmg=0, col=null;
             if(fd>0 && d2<=fr2){ dmg+=fd; col=COL_FIRE; }
             if(ed>0 && d2<=er2){ dmg+=ed; col=COL_ELEC_RING; }
-            if(dmg>0) applyDamageAtIndex(i,dmg,col??COL_ELEC_RING,true);
+            if(dmg>0) applyDamageAtIndex(e,dmg,col??COL_ELEC_RING,true);
           }
         }
       }
     }
 
-    // movement input
     let mx=0,my=0;
     if(keys.has("w")||keys.has("arrowup")) my-=1;
     if(keys.has("s")||keys.has("arrowdown")) my+=1;
     if(keys.has("a")||keys.has("arrowleft")) mx-=1;
     if(keys.has("d")||keys.has("arrowright")) mx+=1;
+
+    // Mouse tutma kontrolü
+    if(mousePressed){
+      const dx = mouseX - player.x;
+      const dy = mouseY - player.y;
+      const len = Math.hypot(dx, dy) || 1;
+      mx = dx / len;
+      my = dy / len;
+    }
 
     if(mx||my){
       const len=Math.hypot(mx,my)||1;
@@ -1414,17 +1531,14 @@
       softPushPlayer();
     }
 
-    // enemies move
     for(const e of enemies){
       if(!e) continue;
 
-      // boss freeze timers
       if(e.kind==="boss"){
         e.freezeLock = Math.max(0, (e.freezeLock||0) - dt);
         e.freezeT = Math.max(0, (e.freezeT||0) - dt);
       }
 
-      // knockback integration
       if(e.kvx || e.kvy){
         e.x += e.kvx*dt;
         e.y += e.kvy*dt;
@@ -1464,14 +1578,13 @@
       e.y=clamp(e.y,pad,H-pad);
     }
 
-    // contact
     if(!playerDead) enemyContactCheck(dt);
 
-    // magnet + pickups
     if(!playerDead){
       const mr=player.r*MAGNET_RANGE_MULT, mr2=mr*mr;
       for(let i=drops.length-1;i>=0;i--){
         const d=drops[i];
+        if (!d) continue;
         d.life-=dt;
         let d2=dist2(player.x,player.y,d.x,d.y);
 
@@ -1506,14 +1619,11 @@
       }
     }
 
-    // shooting cadence
     if(!playerDead){
-      // base
       tBase -= dt;
       const bi = 1/(3 + skills.baseWeapon*0.18);
       while(tBase<=0){ tBase += bi; shootBase(); }
 
-      // fire
       if(skills.fireball>0){
         tFire -= dt;
         const f = 1.0 + skills.fireball*0.12;
@@ -1521,7 +1631,6 @@
         while(tFire<=0){ tFire += fi; shootFire(); }
       }
 
-      // elec
       if(skills.electricBall>0){
         tElec -= dt;
         const e = 0.9 + skills.electricBall*0.12;
@@ -1529,13 +1638,13 @@
         while(tElec<=0){ tElec += ei; shootElec(); }
       }
 
-      // sticks
       sticksUpdate(dt);
     }
 
-    // bullets update + collisions
+    const bullets = bulletPool.getActive();
     for(let i=bullets.length-1;i>=0;i--){
       const b=bullets[i];
+      if(!b) continue;
       b.life -= dt;
       if(b.lastHitT>0) b.lastHitT = Math.max(0, b.lastHitT - dt);
 
@@ -1544,37 +1653,42 @@
       b.x += b.vx*dt;
       b.y += b.vy*dt;
 
-      // collision
       let didHit=false;
       for(let j=0;j<enemies.length;j++){
         const e=enemies[j];
         if(!e) continue;
         const rr=b.r+e.r;
         if(dist2(b.x,b.y,e.x,e.y)<=rr*rr){
-          const keep = bulletHitEnemy(b, j);
+          const keep = bulletHitEnemy(b, e);
           didHit=true;
-          if(!keep){ bullets.splice(i,1); }
+          if(!keep){ bulletPool.release(b); }
           break;
         }
       }
 
       if(!didHit){
         if(b.life<=0 || b.x<-BULLET_OOB || b.x>W+BULLET_OOB || b.y<-BULLET_OOB || b.y>H+BULLET_OOB){
-          bullets.splice(i,1);
+          bulletPool.release(b);
         }
       }
     }
 
-    // decay arrays
-    for(let i=trails.length-1;i>=0;i--){ trails[i].life-=dt; if(trails[i].life<=0) trails.splice(i,1); }
+    for(let i=trails.length-1;i>=0;i--){ 
+      if (trails[i]) trails[i].life-=dt; 
+      if(trails[i] && trails[i].life<=0) trails.splice(i,1); 
+    }
     for(let i=particles.length-1;i>=0;i--){
       const p=particles[i];
+      if (!p) continue;
       p.life-=dt;
       p.x+=p.vx*dt; p.y+=p.vy*dt;
       p.vx*= (1-1.8*dt); p.vy*=(1-1.8*dt);
       if(p.life<=0) particles.splice(i,1);
     }
-    for(let i=effects.length-1;i>=0;i--){ effects[i].life-=dt; if(effects[i].life<=0) effects.splice(i,1); }
+    for(let i=effects.length-1;i>=0;i--){ 
+      if (effects[i]) effects[i].life-=dt; 
+      if(effects[i] && effects[i].life<=0) effects.splice(i,1); 
+    }
 
     openUpgradeIfNeeded();
   }
@@ -1590,7 +1704,6 @@
       if(started && running && !pausedByUpgrade){
         update(dt);
       } else {
-        // timers while paused
         waveBannerT=Math.max(0,waveBannerT-dt);
         resumeMsgT=Math.max(0,resumeMsgT-dt);
         cardLockT=Math.max(0,cardLockT-dt);
@@ -1604,10 +1717,10 @@
       }
       draw();
     }catch(err){
-      console.error(err);
+      console.error("Game error:", err);
       running=false;
       started=false;
-      startOverlay.style.display="flex";
+      if (startOverlay) startOverlay.style.display="flex";
     }
     requestAnimationFrame(loop);
   }
@@ -1630,25 +1743,45 @@
       if(k==="4") applyUpgrade(3,false);
     }
   },{passive:false});
+  
   window.addEventListener("keyup",(e)=>keys.delete(e.key.toLowerCase()));
 
-  pauseBtn.addEventListener("click", togglePause);
-  restartBtn.addEventListener("click", restartImmediate);
-  startBtn.addEventListener("click", startGame);
-  rerollBtn.addEventListener("click", doReroll);
+  // Mouse controls
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+  });
+
+  canvas.addEventListener("mousedown", (e) => {
+    if(!started || !running || pausedByUpgrade || playerDead) return;
+    mousePressed = true;
+  });
+
+  canvas.addEventListener("mouseup", (e) => {
+    mousePressed = false;
+  });
+
+  canvas.addEventListener("mouseleave", (e) => {
+    mousePressed = false;
+  });
+
+  if (pauseBtn) pauseBtn.addEventListener("click", togglePause);
+  if (restartBtn) restartBtn.addEventListener("click", restartImmediate);
+  if (startBtn) startBtn.addEventListener("click", startGame);
+  if (rerollBtn) rerollBtn.addEventListener("click", doReroll);
 
   function startGame(){
     resetGameState();
     started=true;
     running=true;
-    startOverlay.style.display="none";
+    if (startOverlay) startOverlay.style.display="none";
     setPauseText();
   }
 
-  // Boot
   setPauseText();
   resetGameState();
-  startOverlay.style.display="flex";
+  if (startOverlay) startOverlay.style.display="flex";
   requestAnimationFrame(loop);
 
 })();
